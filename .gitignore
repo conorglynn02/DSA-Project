@@ -1,2 +1,5 @@
 index.json
 indexer
+
+*.exe
+*.Identifier
