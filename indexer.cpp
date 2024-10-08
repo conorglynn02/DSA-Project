@@ -132,8 +132,16 @@ void saveIndex(const unordered_map<string, unordered_set<string>>& index, const 
 int main() {
     // Map of document IDs to file paths
     unordered_map<string, string> documents = {
-        {"doc1", "./document1.txt"},
-        {"doc2", "./document2.txt"},
+        {"AlicesAdventuresInWonderland", "./Books/AlicesAdventuresInWonderland.txt"},
+        {"ARoomWithAView", "./Books/ARoomWithAView.txt"},
+        {"Frankenstein", "./Books/Frankenstein.txt"},
+        {"LittleWomen", "./Books/LittleWomen.txt"},
+        {"Middlemarch", "./Books/Middlemarch.txt"},
+        {"MobyDick", "./Books/MobyDick.txt"},
+        {"PrideAndPrejudice", "./Books/PrideAndPrejudice.txt"},
+        {"RomeoAndJuliet", "./Books/RomeoAndJuliet.txt"},
+        {"TheBlueCastle", "./Books/TheBlueCastle.txt"},
+        {"TheScarletLetter", "./Books/TheScarletLetter.txt"},
     };
 
     // Create a Trie for autocomplete
