@@ -107,14 +107,24 @@ int main(int argc, char const *argv[])
 
     // Autocomplete
     string prefix;
-    cout << "Enter prefix for autocomplete: ";
-    cin >> prefix;
-    auto suggestions = trie.autocomplete(prefix);
-    cout << "Suggestions: ";
-    for (const auto& suggestion : suggestions) {
-        cout << suggestion << " ";
-    }
-    cout << endl;
+    while (true) {
+        cout << "Enter prefix for autocomplete (or type ':q' to quit): ";
+        cin >> prefix;
 
+        if (prefix == ":q") {
+            break;
+        }
+
+        auto suggestions = trie.autocomplete(prefix);
+        if (suggestions.empty()) {
+            cout << "No suggestions found." << endl;
+        } else {
+            cout << "Suggestions: ";
+            for (const auto& suggestion : suggestions) {
+                cout << suggestion << " ";
+            }
+            cout << endl;
+        }
+    }
     return 0;
 }
