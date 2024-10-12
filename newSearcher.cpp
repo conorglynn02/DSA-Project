@@ -193,7 +193,9 @@ public:
                 char colon;  // Read the colon separating book ID and frequency
                 iss >> colon; // Skip the colon
                 iss >> frequency;  // Read the frequency
-                insert(word, bookID);  // Insert into the hash table
+                for (int i = 0; i < frequency; i++) {
+                    insert(word, bookID);  // Insert into the hash table
+                }
             }
         }
     }
