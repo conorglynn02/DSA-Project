@@ -140,6 +140,30 @@ public:
         }
     }
 
+    void insertX(const std::string& word, int bookID, int frequency) {
+        int hashIndex = hashFunction(word);
+        HashNode* prev = nullptr;
+        HashNode* entry = table[hashIndex];
+
+        // Traverse the linked list to find the word in the hash table
+        while (entry != nullptr && entry->key != word) {
+            prev = entry;
+            entry = entry->next;
+        }
+
+        if (entry == nullptr) {  // Word not found, insert new node
+            entry = new HashNode(word);
+            entry->bookFrequency[bookID] = frequency;  // First occurrence of the word in the book
+            if (prev == nullptr) {  // No collision
+                table[hashIndex] = entry;
+            } else {  // Collision occurred, add new node to the chain
+                prev->next = entry;
+            }
+        } else {  // Word found, update frequency
+            entry->bookFrequency[bookID] = entry->bookFrequency[bookID] + frequency;
+        }
+    }
+
     void search(std::string word) {
         int hashIndex = hashFunction(word);
         HashNode* prev = nullptr;
@@ -193,9 +217,7 @@ public:
                 char colon;  // Read the colon separating book ID and frequency
                 iss >> colon; // Skip the colon
                 iss >> frequency;  // Read the frequency
-                for (int i = 0; i < frequency; i++) {
-                    insert(word, bookID);  // Insert into the hash table
-                }
+                insertX(word, bookID, frequency); // Insert the word with the frequency
             }
         }
     }
