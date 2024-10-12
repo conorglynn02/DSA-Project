@@ -70,7 +70,7 @@ public:
         return results;
     }
 };
-
+//load index from json file
 unordered_map<string, unordered_set<string>> loadIndex(const string& filePath) {
     unordered_map<string, unordered_set<string>> index;
     ifstream inFile(filePath);
@@ -90,6 +90,17 @@ unordered_map<string, unordered_set<string>> loadIndex(const string& filePath) {
     return index;
 }
 
+//search for word in the index and return relevant books
+vector<string> searchKeyword(const unordered_map<string, unordered_set<string>>& index, const string& keyword) {
+    vector<string> results;
+    if (index.find(keyword) != index.end()) {
+        for (const auto& book : index.at(keyword)) {
+            results.push_back(book);
+        }
+    }
+    return results;
+}
+
 int main(int argc, char const *argv[])
 {
     // Create a Trie for autocomplete
@@ -105,26 +116,51 @@ int main(int argc, char const *argv[])
         trie.insert(entry.first);
     }
 
-    // Autocomplete
-    string prefix;
+    string choice;
     while (true) {
-        cout << "Enter prefix for autocomplete (or type ':q' to quit): ";
-        cin >> prefix;
+        cout << "\nChoose an option: \n1. Autocomplete \n2. Search for a keyword \n3. Exit\n";
+        cin >> choice;
 
-        if (prefix == ":q") {
+        if (choice == "1") {
+            //Autocomplete
+            string prefix;
+            cout << "Enter prefix for autocomplete: ";
+            cin >> prefix;
+
+            auto suggestions = trie.autocomplete(prefix);
+            if (suggestions.empty()) {
+                cout << "No suggestions found." << endl;
+            } else {
+                cout << "Suggestions: ";
+                for (const auto& suggestion : suggestions) {
+                    cout << suggestion << " ";
+                }
+                cout << endl;
+            }
+
+        } else if (choice == "2") {
+            //keyword search
+            string keyword;
+            cout << "Enter keyword to search: ";
+            cin >> keyword;
+
+            auto results = searchKeyword(index, keyword);
+            if (results.empty()) {
+                cout << "No books found containing the keyword: " << keyword << endl;
+            } else {
+                cout << "The keyword \"" << keyword << "\" appears in the following books:\n";
+                for (const auto& book : results) {
+                    cout << "- " << book << endl;
+                }
+            }
+        }
+        else if (choice == "3") {
             break;
         }
-
-        auto suggestions = trie.autocomplete(prefix);
-        if (suggestions.empty()) {
-            cout << "No suggestions found." << endl;
-        } else {
-            cout << "Suggestions: ";
-            for (const auto& suggestion : suggestions) {
-                cout << suggestion << " ";
-            }
-            cout << endl;
+        else {
+            cout << "Invalid choice. Please try again." << endl;
         }
     }
+
     return 0;
 }
