@@ -19,6 +19,82 @@ struct HashNode {
     HashNode(const std::string& k) : key(k), next(nullptr) {}
 };
 
+// HashTable class
+// The HashTable class stores words and their frequencies for each book in a hash table.
+// It uses a hash function to convert a word into an index, and handles collisions by chaining.
+class HashTable {
+private:
+    // The hash table is implemented as a vector of HashNode pointers
+    std::vector<HashNode*> table;
+
+    // The size of the hash table
+    int TABLE_SIZE = 100;
+
+    // Hash function that converts a string (word) into an index
+    int hashFunction(const std::string& key) {
+        unsigned long hash = 0;
+        for (char ch : key) {
+            hash = (hash * 31) + ch;
+        }
+        return hash % TABLE_SIZE;
+    }
+
+public:
+    // Constructor to initialize the hash table with a specific size
+    HashTable() {
+        table.resize(TABLE_SIZE, nullptr);
+    }
+
+    // Insert a word and update its frequency for a specific book ID
+    void insert(const std::string& word, int bookID, Trie& trie) {
+        // Calculate the hash index for the word
+        int hashIndex = hashFunction(word);
+        // Initialize pointers for traversal
+        HashNode* prev = nullptr;
+        // Get the head of the linked list at the hash index
+        HashNode* entry = table[hashIndex];
+
+        // Insert word into the trie
+        trie.insert(word);
+
+        // Traverse the linked list to find the word in the hash table
+        while (entry != nullptr && entry->key != word) {
+            prev = entry;
+            entry = entry->next;
+        }
+
+        // Word not found, insert new node
+        if (entry == nullptr) {
+            entry = new HashNode(word);
+            entry->bookFrequency[bookID] = 1;  // First occurrence of the word in the book
+            if (prev == nullptr) {  // No collision
+                table[hashIndex] = entry;
+            } else {  // Collision occurred, add new node to the chain
+                prev->next = entry;
+            }
+        } else {  // Word found, update frequency
+            entry->bookFrequency[bookID]++;
+        }
+    }
+
+    // Display the hash table contents (for debugging)
+    void display() {
+        for (int i = 0; i < TABLE_SIZE; ++i) {
+            HashNode* entry = table[i];
+            if (entry != nullptr) {
+                std::cout << "Bucket " << i << ":\n";
+                while (entry != nullptr) {
+                    std::cout << "  Word: " << entry->key << "\n";
+                    for (const auto& freq : entry->bookFrequency) {
+                        std::cout << "    Book ID: " << freq.first << ", Frequency: " << freq.second << "\n";
+                    }
+                    entry = entry->next;
+                }
+            }
+        }
+    }
+};  
+
 // Trie node definition
 // Each node in the trie contains a map of characters to child nodes, a flag to indicate the end of a word, and the word itself (if it is the end of a word).
 struct TrieNode {
@@ -60,15 +136,19 @@ public:
     }
 
     // Helper function for serializing the trie
+    // This function performs a depth-first traversal of the trie and writes the nodes to a file
     void serializeHelper(TrieNode* node, std::ofstream& outFile) {
+        // Base case: If the node is null, return
         if (!node) return;
-
+        // Traverse the children of the node
         for (const auto& pair : node->children) {
-            // Write the character, isEndOfWord, and the word (if end of word)
+            // Write the character, isEndOfWord flag, and the word to the file
             outFile << pair.first << " " << pair.second->isEndOfWord;
+            // If it is the end of a word, write the word itself
             if (pair.second->isEndOfWord) {
                 outFile << " " << pair.second->word;
             }
+            // Write a newline character to separate entries
             outFile << "\n";
 
             // Recursive call for child nodes
@@ -82,72 +162,6 @@ public:
     // Serialize the trie into a file
     void serialize(std::ofstream& outFile) {
         serializeHelper(root, outFile);
-    }
-};
-
-// HashTable class
-class HashTable {
-private:
-    std::vector<HashNode*> table;
-    int TABLE_SIZE = 100;
-
-    // Hash function that converts a string (word) into an index
-    int hashFunction(const std::string& key) {
-        unsigned long hash = 0;
-        for (char ch : key) {
-            hash = (hash * 31) + ch;
-        }
-        return hash % TABLE_SIZE;
-    }
-
-public:
-    HashTable() {
-        table.resize(TABLE_SIZE, nullptr);
-    }
-
-    // Insert a word and update its frequency for a specific book ID
-    void insert(const std::string& word, int bookID, Trie& trie) {
-        int hashIndex = hashFunction(word);
-        HashNode* prev = nullptr;
-        HashNode* entry = table[hashIndex];
-
-        // Insert word into the trie
-        trie.insert(word);
-
-        // Traverse the linked list to find the word in the hash table
-        while (entry != nullptr && entry->key != word) {
-            prev = entry;
-            entry = entry->next;
-        }
-
-        if (entry == nullptr) {  // Word not found, insert new node
-            entry = new HashNode(word);
-            entry->bookFrequency[bookID] = 1;  // First occurrence of the word in the book
-            if (prev == nullptr) {  // No collision
-                table[hashIndex] = entry;
-            } else {  // Collision occurred, add new node to the chain
-                prev->next = entry;
-            }
-        } else {  // Word found, update frequency
-            entry->bookFrequency[bookID]++;
-        }
-    }
-
-    // Display the hash table contents (for debugging)
-    void display() {
-        for (int i = 0; i < TABLE_SIZE; ++i) {
-            HashNode* entry = table[i];
-            if (entry != nullptr) {
-                std::cout << "Bucket " << i << ":\n";
-                while (entry != nullptr) {
-                    std::cout << "  Word: " << entry->key << "\n";
-                    for (const auto& freq : entry->bookFrequency) {
-                        std::cout << "    Book ID: " << freq.first << ", Frequency: " << freq.second << "\n";
-                    }
-                    entry = entry->next;
-                }
-            }
-        }
     }
 };
 
