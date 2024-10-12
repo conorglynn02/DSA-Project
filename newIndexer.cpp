@@ -163,6 +163,26 @@ public:
             }
         }
     }
+
+    // Helper function for serializing the trie
+    void serializeHelper(std::ofstream& outFile) {
+        for (int i = 0; i < TABLE_SIZE; ++i) {
+            HashNode* entry = table[i];
+            while (entry != nullptr) {
+                outFile << entry->key;  // Write the word
+                for (const auto& freq : entry->bookFrequency) {
+                    outFile << " " << freq.first << ":" << freq.second; // Write Book ID and Frequency
+                }
+                outFile << "\n"; // End of the current node entry
+                entry = entry->next; // Move to the next node in the linked list
+            }
+        }
+    }
+
+    // Serialize the hash table into a file
+    void serialize(std::ofstream& outFile) {
+        serializeHelper(outFile);
+    }
 };  
 
 // Function to read words from a text file and index them
@@ -199,12 +219,21 @@ int main() {
         bookID++;
     }
 
+    // hashTable.display();
+
     // Serialize the trie to a file
     std::ofstream outFile("trie_data.txt");
     trie.serialize(outFile);
     outFile.close();
 
-    std::cout << "Indexing complete and trie serialized.\n";
+    // Serialize the hash table to a file
+    std::ofstream hashTableFile("hash_table_data.txt");
+    hashTable.serialize(hashTableFile);
+    hashTableFile.close();
+
+    std::cout << "Hash table serialized.\n";
+
+    std::cout << "Indexing complete, index and trie serialized.\n";
 
     return 0;
 }

@@ -4,6 +4,9 @@
 #include <vector>
 #include <sstream> 
 
+const int TABLE_SIZE = 100;
+const int numberOfBooks = 10;
+
 // Trie node definition
 struct TrieNode {
     std::unordered_map<char, TrieNode*> children;
@@ -84,6 +87,123 @@ public:
     }
 };
 
+struct HashNode {
+    std::string key;
+    std::unordered_map<int, int> bookFrequency;  // Book ID -> frequency
+    HashNode* next;
+
+    HashNode(const std::string& k) : key(k), next(nullptr) {}
+};
+
+// HashTable class
+class HashTable {
+private:
+    std::vector<HashNode*> table;
+    int TABLE_SIZE = 100;
+
+    // Hash function that converts a string (word) into an index
+    int hashFunction(const std::string& key) {
+        unsigned long hash = 0;
+        for (char ch : key) {
+            hash = (hash * 31) + ch;
+        }
+        return hash % TABLE_SIZE;
+    }
+
+public:
+    HashTable() {
+        table.resize(TABLE_SIZE, nullptr);
+    }
+
+    // Insert a word and update its frequency for a specific book ID
+    void insert(const std::string& word, int bookID) {
+        int hashIndex = hashFunction(word);
+        HashNode* prev = nullptr;
+        HashNode* entry = table[hashIndex];
+
+        // Traverse the linked list to find the word in the hash table
+        while (entry != nullptr && entry->key != word) {
+            prev = entry;
+            entry = entry->next;
+        }
+
+        if (entry == nullptr) {  // Word not found, insert new node
+            entry = new HashNode(word);
+            entry->bookFrequency[bookID] = 1;  // First occurrence of the word in the book
+            if (prev == nullptr) {  // No collision
+                table[hashIndex] = entry;
+            } else {  // Collision occurred, add new node to the chain
+                prev->next = entry;
+            }
+        } else {  // Word found, update frequency
+            entry->bookFrequency[bookID]++;
+        }
+    }
+
+    void search(std::string word) {
+        int hashIndex = hashFunction(word);
+        HashNode* prev = nullptr;
+        HashNode* entry = table[hashIndex];
+
+        while (entry != nullptr && entry->key != word) {
+            prev = entry;
+            entry = entry->next;
+        }
+
+        if (entry == nullptr) { // Word is not found
+            std::cout << "Word not found" << std::endl;
+            return;
+        } else { // Word is found
+            std::cout << "Word found: " << std::endl;
+            for (int i = 1; i <= numberOfBooks; i++) {
+                if (entry->bookFrequency[i]) {
+                    std::cout << "Book id: " << i << " Count: " << entry->bookFrequency[i] << std::endl;
+                }
+            }
+        }
+    }
+
+    // Display the hash table contents (for debugging)
+    void display() {
+        for (int i = 0; i < TABLE_SIZE; ++i) {
+            HashNode* entry = table[i];
+            if (entry != nullptr) {
+                std::cout << "Bucket " << i << ":\n";
+                while (entry != nullptr) {
+                    std::cout << "  Word: " << entry->key << "\n";
+                    for (const auto& freq : entry->bookFrequency) {
+                        std::cout << "    Book ID: " << freq.first << ", Frequency: " << freq.second << "\n";
+                    }
+                    entry = entry->next;
+                }
+            }
+        }
+    }
+
+    // Helper function for deserializing the hash table
+    void deserializeHelper(std::ifstream& inFile) {
+        std::string line;
+        while (std::getline(inFile, line)) {
+            std::istringstream iss(line);
+            std::string word;
+            iss >> word;  // Read the word
+
+            int bookID, frequency;
+            while (iss >> bookID) {
+                char colon;  // Read the colon separating book ID and frequency
+                iss >> colon; // Skip the colon
+                iss >> frequency;  // Read the frequency
+                insert(word, bookID);  // Insert into the hash table
+            }
+        }
+    }
+
+    // Deserialize the hash table from a file
+    void deserialize(std::ifstream& inFile) {
+        deserializeHelper(inFile);
+    }
+};
+
 // Function to perform autocompletion using the pre-built trie
 void autoCompleteSearch(Trie& trie) {
     std::string prefix;
@@ -99,6 +219,7 @@ void autoCompleteSearch(Trie& trie) {
 
 int main() {
     Trie trie;
+    HashTable hashtable;
 
     // Deserialize the trie from the file
     std::ifstream inFile("trie_data.txt");
@@ -108,6 +229,19 @@ int main() {
     }
     trie.deserialize(inFile);
     inFile.close();
+
+    // Deserialize the trie from the file
+    std::ifstream inFileHashTable("hash_table_data.txt");
+    if (!inFileHashTable) {
+        std::cerr << "Failed to open hash table data file.\n";
+        return 1;
+    }
+    hashtable.deserialize(inFileHashTable);
+    inFileHashTable.close();
+
+    hashtable.search("my");
+
+    // hashtable.display();
 
     // Perform autocompletion search
     autoCompleteSearch(trie);
