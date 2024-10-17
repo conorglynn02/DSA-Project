@@ -7,7 +7,65 @@
 
 namespace fs = std::filesystem;
 
-const int TABLE_SIZE = 100;
+const int TABLE_SIZE = 10000000;
+int numberOfBooks = 0;
+int mapSize = 0;
+
+// template <typename T>
+// class victorTheVector {
+// private:
+//     T* currentVector;   // Pointer to the underlying array
+//     int capacity;
+//     int currentSize;
+
+// public:
+//     victorTheVector(int size = 10) {
+//         capacity = size;
+//         currentSize = 0;
+//         currentVector = new T[capacity];
+//     }
+
+//     // // Destructor to free the dynamically allocated memory
+//     // ~victorTheVector() {
+//     //     delete[] currentVector;
+//     // }
+
+//     // Resize array when it's full
+//     void resize() {
+//         capacity *= 2; // Double the capacity
+//         T* newVector = new T[capacity]; // Allocate a new array with the new capacity
+        
+//         // Copy elements from old array to new array
+//         for (int i = 0; i < currentSize; i++) {
+//             newVector[i] = currentVector[i];
+//         }
+        
+//         delete[] currentVector;  // Delete the old array
+//         currentVector = newVector;  // Point to the new array
+//     }
+
+//     // Method to add an element to the vector
+//     void push_back(T element) {
+//         // If array is full, resize it
+//         if (currentSize == capacity) {
+//             resize();
+//         }
+        
+//         currentVector[currentSize] = element;   // Add the new element
+//         currentSize++;  // Increment the size
+//     }
+
+//     T& operator[](int index) {
+//         if (index >= currentSize || index < 0) {
+//             throw std::out_of_range("Index out of range");
+//         }
+//         return currentVector[index];
+//     }
+
+//     int size() {
+//         return currentSize;
+//     }
+// };
 
 struct BookFrequencyNode {
     int bookID;
@@ -25,12 +83,13 @@ public:
 
 public:
     BookFrequencyList() : head(nullptr) {}
-    void insert(int bookID) {
+    void insert(int bookID, int frequency) {
         // Case 1: checking if the list is empty and inserting the first node
         if (head == nullptr) {
-            BookFrequencyNode* newNode = new BookFrequencyNode(bookID, 1);
+            BookFrequencyNode* newNode = new BookFrequencyNode(bookID, frequency);
             head = newNode;
             head->prev = nullptr;
+            mapSize++;
             return;
         }
 
@@ -38,7 +97,7 @@ public:
         BookFrequencyNode* current = head;
         while (current != nullptr) {
             if (current->bookID == bookID) {
-                current->frequency++;
+                current->frequency += frequency;
                 sort(current); // Sort the node based on the frequency
                 return;
             }
@@ -46,8 +105,9 @@ public:
         }
 
         // Case 3: inserting a new node if bookID is not in the list
-        BookFrequencyNode* newNode = new BookFrequencyNode(bookID, 1);
-        
+        BookFrequencyNode* newNode = new BookFrequencyNode(bookID, frequency);
+        mapSize++;
+
         insertSorted(newNode);
         
         // newNode->prev = nullptr;
@@ -277,30 +337,67 @@ public:
 class HashTable {
 private:
     // The hash table is implemented as a vector of HashNode pointers
-    std::vector<HashNode*> table;
+    // victorTheVector<HashNode*> table;
+    // std::vector<HashNode*> table;
+    HashNode** table;
 
     // The size of the hash table
     int TABLE_SIZE = 100;
+    float loadFactor = 0.75;
 
     // Hash function that converts a string (word) into an index
-    int hashFunction(const std::string& key) {
-        unsigned long hash = 0;
-        for (char ch : key) {
-            hash = (hash * 31) + ch;
-        }
+    // int hashFunction1(const std::string& key) {
+    //     unsigned long hash = 0;
+    //     for (char ch : key) {
+    //         hash = (hash * 31) + ch;
+    //     }
+    //     return hash % TABLE_SIZE;
+    // }
+
+    // int hashFunction2(const std::string& key) {
+    //     int hash =hashFunction1(key);
+    //     int magicNumber = 13 - (hash % 13);
+    //     if (magicNumber == 0) {
+    //         magicNumber = 1;
+    //     }
+    //     return magicNumber;
+    // }
+
+    int firstHash(const std::string& word) {
+        size_t hash = std::hash<std::string>()(word); 
         return hash % TABLE_SIZE;
+    }
+
+    int secondHash(const std::string& word) {
+        size_t hash = std::hash<std::string>()(word); 
+        return (7 - (hash % 7));
     }
 
 public:
     // Constructor to initialize the hash table with a specific size
     HashTable() {
-        table.resize(TABLE_SIZE, nullptr);
+        // table.resize(TABLE_SIZE, nullptr);
+        // table = victorTheVector<HashNode*>(TABLE_SIZE);
+        // table = std::vector<HashNode*>(TABLE_SIZE, nullptr);
+        table = new HashNode*[TABLE_SIZE];
     }
-
     // Insert a word and update its frequency for a specific book ID
     void insert(const std::string& word, int bookID, Trie& trie) {
+        // if table has too high load factor, then rehash
+        if ((float(mapSize) / TABLE_SIZE) >= loadFactor) {
+            rehash(trie);
+        }
         // Calculate the hash index for the word
-        int hashIndex = hashFunction(word);
+        // int hashIndex = hashFunction1(word);
+        // int hash2 = hashFunction2(word);
+        int hashIndex = firstHash(word);
+        int hash2 = secondHash(word);
+
+        while(table[hashIndex] != nullptr && table[hashIndex]->key != word) {
+            hashIndex = (hashIndex + hash2) % TABLE_SIZE;
+        }
+        // std::cout << "Inserting word: " << word << " with book ID: " << bookID << " at hash index: " << hashIndex << "\n";
+
         // Initialize pointers for traversal
         HashNode* prev = nullptr;
         // Get the head of the linked list at the hash index
@@ -312,10 +409,64 @@ public:
             table[hashIndex] = entry;    // Assign it to the hash table
         }
 
-        entry->bookFrequency.insert(bookID);
+        entry->bookFrequency.insert(bookID, 1);
 
         // Insert word into the trie
         trie.insert(word);
+    }
+
+    void rehash(Trie& trie) {
+        int oldSize = TABLE_SIZE;
+        TABLE_SIZE = (TABLE_SIZE * 2) + 1;
+        // std::cout << "Rehashing... table size is now "<< TABLE_SIZE << "\n";
+        // std::cout << "Map size is " << mapSize << "\n";
+
+        // victorTheVector<HashNode*> oldTable = victorTheVector<HashNode*>(oldSize);
+        
+        // std::vector<HashNode*> oldTable;
+        // for (int i = 0; i < oldSize; i++) {
+        //     if (table[i] != nullptr) {
+        //         HashNode* newNode = new HashNode(*table[i]);  // Create a new HashNode copy
+        //         // oldTable.push_back(newNode);
+        //         oldTable[i] = newNode;
+        //     }
+        //     else {
+        //         oldTable.push_back(nullptr);
+        //     }
+        // }
+
+        // std::vector<HashNode*> oldTable = table;
+        HashNode** oldTable = table;
+        // table = new HashNode<K, V>*[capacity]; 
+
+        // table = victorTheVector<HashNode*>(TABLE_SIZE);
+        // table = std::vector<HashNode*>(TABLE_SIZE, nullptr);
+        table = new HashNode*[TABLE_SIZE];
+
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            table[i] = nullptr;
+        }
+
+        mapSize = 0;
+
+        // need to add this function to the indexer too.
+
+        for(int i = 0; i < oldSize; i++) {
+            HashNode* entry = oldTable[i];
+            while (entry != nullptr) {
+                // Iterate through the bookFrequency list for each HashNode
+                BookFrequencyNode* freqNode = entry->bookFrequency.head;
+                while (freqNode != nullptr) {
+                    // Re-insert the word and book ID/frequency into the new table
+                    insert(entry->key, freqNode->bookID, trie);  // Insert each bookID and update frequency inside insert()
+                    freqNode = freqNode->next;
+                }
+                entry = entry->next;
+            }
+        }
+        // delete[] oldTable;
+
+        // table = newTable;
     }
 
     // Display the hash table contents (for debugging)
@@ -392,6 +543,7 @@ int main() {
 
         // Increment the book ID for the next book
         bookID++;
+        break;
     }
 
     // hashTable.display();
