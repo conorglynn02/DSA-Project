@@ -9,15 +9,159 @@ namespace fs = std::filesystem;
 
 const int TABLE_SIZE = 100;
 
+struct BookFrequencyNode {
+    int bookID;
+    int frequency;
+    BookFrequencyNode* next;
+    BookFrequencyNode* prev;
+
+    BookFrequencyNode(int id, int freq) : bookID(id), frequency(freq), next(nullptr) {}
+};
+
+// Book Frequency List class
+class BookFrequencyList {
+public:
+    BookFrequencyNode* head;
+
+public:
+    BookFrequencyList() : head(nullptr) {}
+    void insert(int bookID) {
+        // Case 1: checking if the list is empty and inserting the first node
+        if (head == nullptr) {
+            BookFrequencyNode* newNode = new BookFrequencyNode(bookID, 1);
+            head = newNode;
+            head->prev = nullptr;
+            return;
+        }
+
+        // Case 2: checking if book ID is already in the list
+        BookFrequencyNode* current = head;
+        while (current != nullptr) {
+            if (current->bookID == bookID) {
+                current->frequency++;
+                sort(current); // Sort the node based on the frequency
+                return;
+            }
+            current = current->next;
+        }
+
+        // Case 3: inserting a new node if bookID is not in the list
+        BookFrequencyNode* newNode = new BookFrequencyNode(bookID, 1);
+        newNode->prev = nullptr;
+        newNode->next = head;
+        head->prev = newNode;
+        head = newNode;  // Insert at the beginning for simplicity
+
+
+        // // Case 1: checking to see if the list is empty and inserting the first node
+        // if (head == nullptr) {
+        //     BookFrequencyNode* newNode = new BookFrequencyNode(bookID, 1);
+        //     head = newNode;
+        //     head->prev = nullptr;
+        //     return;
+        // }
+
+        // // Case 2: checking to see if book ID is already in the list
+        // BookFrequencyNode* current = head;
+        // while (current->next != nullptr) {
+        //     if (current->bookID == bookID) {
+        //         current->frequency++;
+        //         sort(current);
+        //         return;
+        //     }
+        //     current = current->next;
+        // }
+        // if (current->bookID == bookID) {
+        //     current->frequency++;
+        //     sort(current);
+        //     return;
+        // }
+
+
+        // // Case 3: inserting a new node if bookid is not in the list
+        // BookFrequencyNode* newNode = new BookFrequencyNode(bookID, 1);
+
+        // //inserting new node at the end of the list
+        // current->next = newNode;
+        // newNode->prev = current;
+        // newNode->next = nullptr;
+    }
+    // Resort the updated frequency node in the list
+    void sort(BookFrequencyNode* current) {
+        // Sort the current node by frequency by moving it up the list
+        while (current->prev != nullptr && current->frequency > current->prev->frequency) {
+            // Swap current with previous node
+            BookFrequencyNode* prevNode = current->prev;
+
+            // Update the previous and next pointers
+            if (prevNode->prev) prevNode->prev->next = current;
+            if (current->next) current->next->prev = prevNode;
+
+            current->prev = prevNode->prev;
+            prevNode->next = current->next;
+            current->next = prevNode;
+            prevNode->prev = current;
+
+            // If we swapped with the head, update the head pointer
+            if (prevNode == head) {
+                head = current;
+            }
+        }
+
+
+        // // Already at the head, no need to sort
+        // if (current->prev == nullptr) {
+        //     return;
+        // }
+
+        // // Check if already sorted
+        // if (current->frequency <= current->prev->frequency) {
+        //     return;
+        // }
+
+        // BookFrequencyNode* sortedNode = current;
+
+
+        // while (current->prev != nullptr) {
+        //     if (current->frequency > sortedNode->frequency) {
+        //         // Traverse list right to left
+        //         sortedNode->next->prev = current->next;
+        //         current->next->next = sortedNode->next;
+        //         sortedNode->next = current->next;
+        //         sortedNode->prev = current;
+        //         current->next->prev = sortedNode;
+        //         current->next = sortedNode;
+        //         return;
+        //     }
+        //     current = current->prev;
+        // }
+
+        // // If the sorted node is the new head
+        // if (current->prev == nullptr) {
+        //     sortedNode->prev->next = sortedNode->next;
+        //     current->prev = sortedNode;
+        //     sortedNode->next = current;
+        //     sortedNode->prev = nullptr;
+        //     head = sortedNode;
+        // }
+
+    }
+};
+
 // Hash table node for storing word frequencies per book
 // Each word in the hash table is represented by a HashNode, which contains the word itself, a map of book IDs to frequencies, and a pointer to the next node in the linked list.
 struct HashNode {
+    // std::string key;
+    // std::unordered_map<int, int> bookFrequency;  // Book ID -> frequency
+    // HashNode* next;
     std::string key;
-    std::unordered_map<int, int> bookFrequency;  // Book ID -> frequency
-    HashNode* next;
+    BookFrequencyList bookFrequency;  // Book ID -> frequency
+    // HashNode* next;
 
-    HashNode(const std::string& k) : key(k), next(nullptr) {}
+    HashNode(const std::string& k) : key(k), bookFrequency() {}
+    //, next(nullptr) {}
 };
+
 
 // Trie node definition
 // Each node in the trie contains a map of characters to child nodes, a flag to indicate the end of a word, and the word itself (if it is the end of a word).
@@ -124,45 +268,34 @@ public:
         // Get the head of the linked list at the hash index
         HashNode* entry = table[hashIndex];
 
+        // If the entry is null, create a new HashNode
+        if (entry == nullptr) {
+            entry = new HashNode(word);  // Create a new HashNode for this word
+            table[hashIndex] = entry;    // Assign it to the hash table
+        }
+
+        entry->bookFrequency.insert(bookID);
+
         // Insert word into the trie
         trie.insert(word);
-
-        // Traverse the linked list to find the word in the hash table
-        while (entry != nullptr && entry->key != word) {
-            prev = entry;
-            entry = entry->next;
-        }
-
-        // Word not found, insert new node
-        if (entry == nullptr) {
-            entry = new HashNode(word);
-            entry->bookFrequency[bookID] = 1;  // First occurrence of the word in the book
-            if (prev == nullptr) {  // No collision
-                table[hashIndex] = entry;
-            } else {  // Collision occurred, add new node to the chain
-                prev->next = entry;
-            }
-        } else {  // Word found, update frequency
-            entry->bookFrequency[bookID]++;
-        }
     }
 
     // Display the hash table contents (for debugging)
-    void display() {
-        for (int i = 0; i < TABLE_SIZE; ++i) {
-            HashNode* entry = table[i];
-            if (entry != nullptr) {
-                std::cout << "Bucket " << i << ":\n";
-                while (entry != nullptr) {
-                    std::cout << "  Word: " << entry->key << "\n";
-                    for (const auto& freq : entry->bookFrequency) {
-                        std::cout << "    Book ID: " << freq.first << ", Frequency: " << freq.second << "\n";
-                    }
-                    entry = entry->next;
-                }
-            }
-        }
-    }
+    // void display() {
+    //     for (int i = 0; i < TABLE_SIZE; ++i) {
+    //         HashNode* entry = table[i];
+    //         if (entry != nullptr) {
+    //             std::cout << "Bucket " << i << ":\n";
+    //             while (entry != nullptr) {
+    //                 std::cout << "  Word: " << entry->key << "\n";
+    //                 for (const auto& freq : entry->bookFrequency) {
+    //                     std::cout << "    Book ID: " << freq.first << ", Frequency: " << freq.second << "\n";
+    //                 }
+    //                 entry = entry->next;
+    //             }
+    //         }
+    //     }
+    // }
 
     // Helper function for serializing the trie
     void serializeHelper(std::ofstream& outFile) {
@@ -170,11 +303,13 @@ public:
             HashNode* entry = table[i];
             while (entry != nullptr) {
                 outFile << entry->key;  // Write the word
-                for (const auto& freq : entry->bookFrequency) {
-                    outFile << " " << freq.first << ":" << freq.second; // Write Book ID and Frequency
+                
+                BookFrequencyNode* current = entry->bookFrequency.head;
+                while(current != nullptr) {
+                    outFile << " " << current->bookID << ":" << current->frequency; // Write Book ID and Frequency
+                    current = current->next;
                 }
                 outFile << "\n"; // End of the current node entry
-                entry = entry->next; // Move to the next node in the linked list
             }
         }
     }
@@ -222,9 +357,9 @@ int main() {
     // hashTable.display();
 
     // Serialize the trie to a file
-    std::ofstream outFile("trie_data.txt");
-    trie.serialize(outFile);
-    outFile.close();
+    // std::ofstream outFile("trie_data.txt");
+    // trie.serialize(outFile);
+    // outFile.close();
 
     // Serialize the hash table to a file
     std::ofstream hashTableFile("hash_table_data.txt");
