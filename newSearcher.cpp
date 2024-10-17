@@ -271,14 +271,19 @@ public:
 // Function to perform autocompletion using the pre-built trie
 void autoCompleteSearch(Trie& trie) {
     std::string prefix;
-    std::cout << "Enter search prefix: ";
     std::cin >> prefix;
-
     std::vector<std::string> results = trie.autoComplete(prefix);
     std::cout << "Autocomplete results for prefix \"" << prefix << "\":\n";
     for (const std::string& result : results) {
         std::cout << result << "\n";
     }
+}
+
+void displayMenu() {
+    std::cout << "Choose an option: \n";
+    std::cout << "1. Search for a word\n";
+    std::cout << "2. Autocomplete\n";
+    std::cout << "3. Exit\n";
 }
 
 int main() {
@@ -303,12 +308,38 @@ int main() {
     hashtable.deserialize(inFileHashTable);
     inFileHashTable.close();
 
-    hashtable.search("my");
+    int choice;
+    std:: string word;
+
+    while (true) {
+        displayMenu();
+        std::cin >> choice;
+
+        switch (choice) {
+            case 1:
+                std::cout << "Enter a word to search: ";
+                std::cin >> word;
+                hashtable.search(word);
+                break;
+            case 2:
+                std::cout << "Enter search prefix: ";
+                autoCompleteSearch(trie);
+                break;
+            case 3:
+                std::cout << "Exiting program.\n";
+                return 0;
+            default:
+                std::cout << "Invalid choice. Please try again.\n";
+                break;
+        }
+    }
+
+    // hashtable.search("my");
 
     // hashtable.display();
 
     // Perform autocompletion search
-    autoCompleteSearch(trie);
+    // autoCompleteSearch(trie);
 
     return 0;
 }
