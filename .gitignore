@@ -4,3 +4,5 @@ searcher
 
 *.exe
 *.Identifier
+*.txt
+settings.json

@@ -87,9 +87,79 @@ public:
     }
 };
 
+struct BookFrequencyNode {
+    int bookID;
+    int frequency;
+    BookFrequencyNode* next;
+    BookFrequencyNode* prev;
+
+    BookFrequencyNode(int id, int freq) : bookID(id), frequency(freq), next(nullptr), prev(nullptr) {}
+};
+
+class BookFrequencyList {
+public:
+    BookFrequencyNode* head;
+
+    BookFrequencyList() : head(nullptr) {}
+
+    void insert(int bookID, int frequency) {
+        // Case 1: Insert the first node
+        if (head == nullptr) {
+            BookFrequencyNode* newNode = new BookFrequencyNode(bookID, frequency);
+            head = newNode;
+            return;
+        }
+
+        // Case 2: Check if bookID already exists in the list
+        BookFrequencyNode* current = head;
+        while (current != nullptr) {
+            if (current->bookID == bookID) {
+                current->frequency += frequency;
+                sort(current); // Sort the node based on updated frequency
+                return;
+            }
+            current = current->next;
+        }
+
+        // Case 3: Insert new node at the beginning
+        BookFrequencyNode* newNode = new BookFrequencyNode(bookID, frequency);
+        newNode->next = head;
+        if (head != nullptr) head->prev = newNode;
+        head = newNode;
+    }
+
+    // Sort the list by frequency in descending order
+    void sort(BookFrequencyNode* current) {
+        while (current->prev != nullptr && current->frequency > current->prev->frequency) {
+            BookFrequencyNode* prevNode = current->prev;
+
+            if (prevNode->prev) prevNode->prev->next = current;
+            if (current->next) current->next->prev = prevNode;
+
+            current->prev = prevNode->prev;
+            prevNode->next = current->next;
+            current->next = prevNode;
+            prevNode->prev = current;
+
+            if (prevNode == head) {
+                head = current;
+            }
+        }
+    }
+
+    // Function to display the list (for debugging)
+    void display() {
+        BookFrequencyNode* current = head;
+        while (current != nullptr) {
+            std::cout << "Book ID: " << current->bookID << ", Frequency: " << current->frequency << std::endl;
+            current = current->next;
+        }
+    }
+};
+
 struct HashNode {
     std::string key;
-    std::unordered_map<int, int> bookFrequency;  // Book ID -> frequency
+    BookFrequencyList bookFrequency;  // Linked list of Book ID -> frequency
     HashNode* next;
 
     HashNode(const std::string& k) : key(k), next(nullptr) {}
@@ -116,30 +186,6 @@ public:
     }
 
     // Insert a word and update its frequency for a specific book ID
-    void insert(const std::string& word, int bookID) {
-        int hashIndex = hashFunction(word);
-        HashNode* prev = nullptr;
-        HashNode* entry = table[hashIndex];
-
-        // Traverse the linked list to find the word in the hash table
-        while (entry != nullptr && entry->key != word) {
-            prev = entry;
-            entry = entry->next;
-        }
-
-        if (entry == nullptr) {  // Word not found, insert new node
-            entry = new HashNode(word);
-            entry->bookFrequency[bookID] = 1;  // First occurrence of the word in the book
-            if (prev == nullptr) {  // No collision
-                table[hashIndex] = entry;
-            } else {  // Collision occurred, add new node to the chain
-                prev->next = entry;
-            }
-        } else {  // Word found, update frequency
-            entry->bookFrequency[bookID]++;
-        }
-    }
-
     void insertX(const std::string& word, int bookID, int frequency) {
         int hashIndex = hashFunction(word);
         HashNode* prev = nullptr;
@@ -153,54 +199,31 @@ public:
 
         if (entry == nullptr) {  // Word not found, insert new node
             entry = new HashNode(word);
-            entry->bookFrequency[bookID] = frequency;  // First occurrence of the word in the book
+            entry->bookFrequency.insert(bookID, frequency);  // Insert into the linked list
             if (prev == nullptr) {  // No collision
                 table[hashIndex] = entry;
             } else {  // Collision occurred, add new node to the chain
                 prev->next = entry;
             }
-        } else {  // Word found, update frequency
-            entry->bookFrequency[bookID] = entry->bookFrequency[bookID] + frequency;
+        } else {  // Word found, update frequency in the linked list
+            entry->bookFrequency.insert(bookID, frequency);
         }
     }
 
-    void search(std::string word) {
+    void search(const std::string& word) {
         int hashIndex = hashFunction(word);
-        HashNode* prev = nullptr;
         HashNode* entry = table[hashIndex];
 
         while (entry != nullptr && entry->key != word) {
-            prev = entry;
             entry = entry->next;
         }
 
-        if (entry == nullptr) { // Word is not found
+        if (entry == nullptr) {
             std::cout << "Word not found" << std::endl;
             return;
-        } else { // Word is found
-            std::cout << "Word found: " << std::endl;
-            for (int i = 1; i <= numberOfBooks; i++) {
-                if (entry->bookFrequency[i]) {
-                    std::cout << "Book id: " << i << " Count: " << entry->bookFrequency[i] << std::endl;
-                }
-            }
-        }
-    }
-
-    // Display the hash table contents (for debugging)
-    void display() {
-        for (int i = 0; i < TABLE_SIZE; ++i) {
-            HashNode* entry = table[i];
-            if (entry != nullptr) {
-                std::cout << "Bucket " << i << ":\n";
-                while (entry != nullptr) {
-                    std::cout << "  Word: " << entry->key << "\n";
-                    for (const auto& freq : entry->bookFrequency) {
-                        std::cout << "    Book ID: " << freq.first << ", Frequency: " << freq.second << "\n";
-                    }
-                    entry = entry->next;
-                }
-            }
+        } else {
+            std::cout << "Word found: " << entry->key << std::endl;
+            entry->bookFrequency.display();  // Display the book frequency linked list
         }
     }
 
@@ -217,9 +240,26 @@ public:
                 char colon;  // Read the colon separating book ID and frequency
                 iss >> colon; // Skip the colon
                 iss >> frequency;  // Read the frequency
-                insertX(word, bookID, frequency); // Insert the word with the frequency
+
+                // Insert into the HashNode's BookFrequencyList
+                insertToList(word, bookID, frequency);
             }
         }
+    }
+
+    // Insert word into the HashTable with frequency as linked list
+    void insertToList(const std::string& word, int bookID, int frequency) {
+        int hashIndex = hashFunction(word);
+        HashNode* entry = table[hashIndex];
+
+        // If word does not exist in the table, create a new node
+        if (entry == nullptr) {
+            entry = new HashNode(word);
+            table[hashIndex] = entry;
+        }
+
+        // Insert into the BookFrequencyList
+        entry->bookFrequency.insert(bookID, frequency);
     }
 
     // Deserialize the hash table from a file

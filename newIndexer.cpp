@@ -47,10 +47,16 @@ public:
 
         // Case 3: inserting a new node if bookID is not in the list
         BookFrequencyNode* newNode = new BookFrequencyNode(bookID, 1);
-        newNode->prev = nullptr;
-        newNode->next = head;
-        head->prev = newNode;
-        head = newNode;  // Insert at the beginning for simplicity
+        
+        insertSorted(newNode);
+        
+        // newNode->prev = nullptr;
+        // newNode->next = head;
+        // head->prev = newNode;
+        // head = newNode;  // Insert at the beginning for simplicity
+
+        // Case 3: inserting a new node at the end if bookID is not in the list
+        // insert it at the end of the list
 
 
         // // Case 1: checking to see if the list is empty and inserting the first node
@@ -86,6 +92,38 @@ public:
         // newNode->prev = current;
         // newNode->next = nullptr;
     }
+
+    // Insert the new node based on frequency
+    void insertSorted(BookFrequencyNode* newNode) {
+        // If the list is empty, insert at the head
+        if (head == nullptr) {
+            head = newNode;
+            return;
+        }
+
+        // If the new node has a higher frequency than the head, insert it at the head
+        if (newNode->frequency > head->frequency) {
+            newNode->next = head;
+            head->prev = newNode;
+            head = newNode;
+            return;
+        }
+
+        // Otherwise, find the correct spot in the list
+        BookFrequencyNode* current = head;
+        while (current->next != nullptr && current->next->frequency >= newNode->frequency) {
+            current = current->next;
+        }
+
+        // Insert the new node after the current node
+        newNode->next = current->next;
+        if (current->next != nullptr) {
+            current->next->prev = newNode;
+        }
+        current->next = newNode;
+        newNode->prev = current;
+    }
+
     // Resort the updated frequency node in the list
     void sort(BookFrequencyNode* current) {
         // Sort the current node by frequency by moving it up the list
@@ -153,7 +191,7 @@ public:
 struct HashNode {
     // std::string key;
     // std::unordered_map<int, int> bookFrequency;  // Book ID -> frequency
-    // HashNode* next;
+    HashNode* next;
     std::string key;
     BookFrequencyList bookFrequency;  // Book ID -> frequency
     // HashNode* next;
@@ -297,7 +335,7 @@ public:
     //     }
     // }
 
-    // Helper function for serializing the trie
+    // Helper function for serializing the hash table
     void serializeHelper(std::ofstream& outFile) {
         for (int i = 0; i < TABLE_SIZE; ++i) {
             HashNode* entry = table[i];
@@ -305,11 +343,13 @@ public:
                 outFile << entry->key;  // Write the word
                 
                 BookFrequencyNode* current = entry->bookFrequency.head;
-                while(current != nullptr) {
-                    outFile << " " << current->bookID << ":" << current->frequency; // Write Book ID and Frequency
+                while (current != nullptr) {
+                    outFile << " " << current->bookID << ":" << current->frequency;  // Write Book ID and Frequency
                     current = current->next;
                 }
-                outFile << "\n"; // End of the current node entry
+                outFile << "\n";  // End of the current node entry
+
+                entry = entry->next;  // Move to the next HashNode
             }
         }
     }
