@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 #include <sstream> 
+#include <unistd.h>
 
 const int TABLE_SIZE = 100;
 const int numberOfBooks = 10;
@@ -165,32 +166,23 @@ public:
     BookFrequencyList() : head(nullptr) {}
 
     void insert(int bookID, int frequency) {
-        // Case 1: Insert the first node
+        BookFrequencyNode* newNode = new BookFrequencyNode(bookID, frequency);
+
+        // If the list is empty, set the new node as the head
         if (head == nullptr) {
-            BookFrequencyNode* newNode = new BookFrequencyNode(bookID, frequency);
             head = newNode;
             return;
         }
 
-        // Case 2: Check if bookID already exists in the list
+        // Traverse to the tail of the list
         BookFrequencyNode* current = head;
-        while (current != nullptr) {
-            if (current->bookID == bookID) {
-                current->frequency += frequency;
-                sort(current); // Sort the node based on updated frequency
-                return;
-            }
-            current = current->next;
-        }
-
-        current = head;
         while (current->next != nullptr) {
             current = current->next;
         }
-        BookFrequencyNode* newNode = new BookFrequencyNode(bookID, frequency);
+
+        // Insert the new node at the end (tail)
         current->next = newNode;
-        newNode->prev = current;
-        newNode->next = nullptr;
+        newNode->prev = current;       
     }
 
     // Sort the list by frequency in descending order
@@ -421,9 +413,48 @@ void top10AndSearch(HashTable hashtable, const std::string& word1, const std::st
     findTop10Books(list1, list2);
 }
 
+void printWithColor(const std::string& text, const std::string& colorCode) {
+    std::cout << "\033[" << colorCode << "m" << text << "\033[0m";
+}
+
+// Function to display cool ASCII art
+void displayCoolIntro() {
+    // Adding some ASCII art for the search engine title
+    std::string title = R"(
+          _    _____       _ _       _       ____                                       _____                     _       ______             _            
+         ( )  / ____|     | | |     ( )     |  _ \                                     / ____|                   | |     |  ____|           (_)           
+   ___   |/  | (___  _   _| | |_   _|/ ___  | |_) | __ _ _ __   __ _ _ __   __ _ ___  | (___   ___  __ _ _ __ ___| |__   | |__   _ __   __ _ _ _ __   ___ 
+  / _ \       \___ \| | | | | | | | | / __| |  _ < / _` | '_ \ / _` | '_ \ / _` / __|  \___ \ / _ \/ _` | '__/ __| '_ \  |  __| | '_ \ / _` | | '_ \ / _ \
+ | (_) |      ____) | |_| | | | |_| | \__ \ | |_) | (_| | | | | (_| | | | | (_| \__ \  ____) |  __/ (_| | | | (__| | | | | |____| | | | (_| | | | | |  __/
+  \___/      |_____/ \__,_|_|_|\__, | |___/ |____/ \__,_|_| |_|\__,_|_| |_|\__,_|___/ |_____/ \___|\__,_|_|  \___|_| |_| |______|_| |_|\__, |_|_| |_|\___|
+                                __/ |                                                                                                   __/ |             
+                               |___/                                                                                                   |___/                 
+)";
+    
+    // Display ASCII art with a color
+    printWithColor(title, "1;36");  // Cyan color
+
+    // Add a tagline for the search engine
+    std::string tagline = "\n\nWelcome to the Ultimate Search Engine!\n";
+    printWithColor(tagline, "1;32");  // Green color
+
+    std::string instructions = "Find words, autocomplete your queries, and explore the world of books.\n\n";
+    printWithColor(instructions, "1;37");  // White color
+
+    sleep(2);  // Pause for 2 seconds for a dramatic effect
+
+    std::string startMessage = "Let's get started...\n\n";
+    printWithColor(startMessage, "1;33");  // Yellow color
+
+    sleep(1);  // Pause for 1 second
+}
+
 int main() {
     Trie trie;
     HashTable hashtable;
+
+    // Display the cool intro with ASCII art
+    displayCoolIntro();
 
     // Deserialize the trie from the file
     std::ifstream inFile("trie_data.txt");
