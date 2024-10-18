@@ -204,15 +204,21 @@ public:
         }
     }
 
-    // Function to display the list (for debugging)
-    void display() {
+    // Function to display the list of X to Y books
+    bool displayXToYBooks(int start, int end) {
         BookFrequencyNode* current = head;
         int count = 0;
-        while (current != nullptr && count < 10) {
-            std::cout << "Book ID: " << current->bookID << ", Frequency: " << current->frequency << std::endl;
+        while (current != nullptr && count < end) {
+            while (current != nullptr && count < start) {
+                current = current->next;
+                count++;
+            }
+            std::cout << count+1 << "-> " << "Book ID: " << current->bookID << ", Frequency: " << current->frequency << std::endl;
             current = current->next;
             count++;
         }
+
+        return (current == nullptr);
     }
 };
 
@@ -297,7 +303,33 @@ public:
             return;
         } else {
             std::cout << "Word found: " << entry->key << std::endl;
-            entry->bookFrequency.display();  // Display the book frequency linked list
+            int start = 0;
+            int end = 10;
+            bool isEnd = entry->bookFrequency.displayXToYBooks(start, end);
+            if (isEnd) {
+                std::cout << "No more books match this search." << std::endl;
+                return;
+            }
+            std::string message = "To see next 10, type \"next\", else press any key and enter.";
+            std::cout << message << std::endl;
+            std:: string option;
+            std::cin >> option;
+            while (option == "next" && !isEnd) {
+                start += 10;
+                end += 10;
+                isEnd = entry->bookFrequency.displayXToYBooks(start, end);
+                if (isEnd) {
+                    break;
+                }
+                std::cout << message << std::endl;
+                std::cin >> option;
+            }
+            if (isEnd) {
+                std::cout << "No more books match this search." << std::endl;
+                return;
+            }
+            std::cout << "Search exited successfully." << std::endl;
+            return;
         }
     }
 
