@@ -347,9 +347,13 @@ void autoCompleteSearch(Trie& trie) {
     std::string prefix;
     std::cin >> prefix;
     std::vector<std::string> results = trie.autoComplete(prefix);
-    std::cout << "Autocomplete results for prefix \"" << prefix << "\":\n";
-    for (const std::string& result : results) {
-        std::cout << result << "\n";
+    if (results.empty()) {
+        std::cout << "No words found with the prefix \"" << prefix << "\".\n";
+    } else {
+        std::cout << "Autocomplete results for prefix \"" << prefix << "\":\n";
+        for (const std::string& result : results) {
+            std::cout << result << "\n";
+        }
     }
 }
 
@@ -513,13 +517,6 @@ int main() {
                 break;
         }
     }
-
-    // hashtable.search("my");
-
-    // hashtable.display();
-
-    // Perform autocompletion search
-    // autoCompleteSearch(trie);
 
     return 0;
 }
