@@ -89,17 +89,17 @@ public:
 };
 
 struct BookFrequencyNode {
-    int bookID;
+    std::string bookID;
     int frequency;
     BookFrequencyNode* next;
     BookFrequencyNode* prev;
 
-    BookFrequencyNode(int id, int freq) : bookID(id), frequency(freq), next(nullptr), prev(nullptr) {}
+    BookFrequencyNode(const std::string& id, int freq) : bookID(id), frequency(freq), next(nullptr), prev(nullptr) {}
 };
 
 class MaxHeap {
 private:
-    std::vector<std::pair<int, int>> heap;  // pair of bookID and combinedFrequency
+    std::vector<std::pair<std::string, int>> heap;  // pair of bookID and combinedFrequency
 
     void heapifyDown(int idx) {
         int largest = idx;
@@ -135,22 +135,21 @@ private:
     }
 
 public:
-    void insert(int bookID, int combinedFrequency) {
+    void insert(const std::string bookID, int combinedFrequency) {
         heap.push_back({bookID, combinedFrequency});
         heapifyUp(heap.size() - 1);
         if (heap.size() > 10) {
             extractMax();
         }
     }
-
-    std::pair<int, int> extractMax() {
-        if (heap.empty()) return {-1, -1};  // Edge case for empty heap
-        std::pair<int, int> maxValue = heap[0];
+    std::pair<std::string, int> extractMax() {
+        if (heap.empty()) return {"", -1};  // Edge case for empty heap
+        std::pair<std::string, int> maxValue = heap[0];
         heap[0] = heap.back();
         heap.pop_back();
         heapifyDown(0);
         return maxValue;
-    }
+}
 
     void displayTop() {
         for (auto& entry : heap) {
@@ -165,7 +164,7 @@ public:
 
     BookFrequencyList() : head(nullptr) {}
 
-    void insert(int bookID, int frequency) {
+    void insert(const std::string& bookID, int frequency) {
         BookFrequencyNode* newNode = new BookFrequencyNode(bookID, frequency);
 
         // If the list is empty, set the new node as the head
@@ -251,7 +250,7 @@ public:
     }
 
     // Insert a word and update its frequency for a specific book ID
-    void insertX(const std::string& word, int bookID, int frequency) {
+    void insertX(const std::string& word, const std::string& bookID, int frequency) {
         int hashIndex = hashFunction(word);
         HashNode* prev = nullptr;
         HashNode* entry = table[hashIndex];
@@ -341,7 +340,8 @@ public:
             std::string word;
             iss >> word;  // Read the word
 
-            int bookID, frequency;
+            std::string bookID;
+            int frequency;
             while (iss >> bookID) {
                 char colon;  // Read the colon separating book ID and frequency
                 iss >> colon; // Skip the colon
@@ -354,7 +354,7 @@ public:
     }
 
     // Insert word into the HashTable with frequency as linked list
-    void insertToList(const std::string& word, int bookID, int frequency) {
+    void insertToList(const std::string& word, const std::string& bookID, int frequency) {
         int hashIndex = hashFunction(word);
         HashNode* entry = table[hashIndex];
 

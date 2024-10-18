@@ -11,12 +11,12 @@ namespace fs = std::filesystem;
 const int TABLE_SIZE = 100;
 
 struct BookFrequencyNode {
-    int bookID;
+    std::string bookID;
     int frequency;
     BookFrequencyNode* next;
     BookFrequencyNode* prev;
 
-    BookFrequencyNode(int id, int freq) : bookID(id), frequency(freq), next(nullptr) {}
+    BookFrequencyNode(const std::string& id, int freq) : bookID(id), frequency(freq), next(nullptr) {}
 };
 
 // Book Frequency List class
@@ -26,7 +26,7 @@ public:
 
 public:
     BookFrequencyList() : head(nullptr) {}
-    void insert(int bookID) {
+    void insert(const std::string& bookID) {
         // Case 1: checking if the list is empty and inserting the first node
         if (head == nullptr) {
             BookFrequencyNode* newNode = new BookFrequencyNode(bookID, 1);
@@ -299,7 +299,7 @@ public:
     }
 
     // Insert a word and update its frequency for a specific book ID
-    void insert(const std::string& word, int bookID, Trie& trie) {
+    void insert(const std::string& word, const std::string& bookID, Trie& trie) {
         // Calculate the hash index for the word
         int hashIndex = hashFunction(word);
         // Initialize pointers for traversal
@@ -375,7 +375,7 @@ std::string cleanWord(const std::string& word) {
 }
 
 // Function to read words from a text file and index them
-void indexWordsFromFile(const std::string& filename, HashTable& hashTable, Trie& trie, int bookID) {
+void indexWordsFromFile(const std::string& filename, HashTable& hashTable, Trie& trie, const std::string& bookID) {
     std::ifstream file(filename);
     std::string word;
 
@@ -405,21 +405,19 @@ int main() {
     std::string booksFolder = "./Books";
 
     // Book ID counter (1 for the first book, 2 for the second, etc.)
-    int bookID = 1;
 
     // Iterate through the "books" folder to get each file
     for (const auto& entry : fs::directory_iterator(booksFolder)) {
         std::string filename = entry.path().string();
+        std::string bookID = entry.path().filename().string();
 
         // Index words from the current book file
-        std::cout << "Indexing book: " << filename << " (Book ID: " << bookID << ")\n";
+        std::cout << "Indexing book: " << filename << " \n";
         indexWordsFromFile(filename, hashTable, trie, bookID);
 
         // Increment the book ID for the next book
-        bookID++;
+        // bookID++;
     }
-
-    // hashTable.display();
 
     // Serialize the trie to a file
     std::ofstream outFile("trie_data.txt");
