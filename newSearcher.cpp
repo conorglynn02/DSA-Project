@@ -357,13 +357,6 @@ void autoCompleteSearch(Trie& trie) {
     }
 }
 
-void displayMenu() {
-    std::cout << "Choose an option: \n";
-    std::cout << "1. Search for a word\n";
-    std::cout << "2. Autocomplete\n";
-    std::cout << "3. Exit\n";
-}
-
 // Function to merge two linked lists and find top 10 combined frequencies using MaxHeap
 void findTop10Books(BookFrequencyList* list1, BookFrequencyList* list2) {
     MaxHeap maxHeap;
@@ -419,6 +412,20 @@ void top10AndSearch(HashTable hashtable, const std::string& word1, const std::st
 
 void printWithColor(const std::string& text, const std::string& colorCode) {
     std::cout << "\033[" << colorCode << "m" << text << "\033[0m";
+}
+
+void displayMenu() {
+    std::string title = "\n\nChoose an Option:\n";
+    printWithColor(title, "1;32");
+    std::string one = "1:";
+    printWithColor(one, "1;33");
+    std::cout << " Search for a word\n";
+    std::string two = "2:";
+    printWithColor(two, "1;34");
+    std::cout << " Autocomplete\n";
+    std::string three = "3:";
+    printWithColor(three, "1;31");
+    std::cout << " Exit\n";
 }
 
 // Function to display cool ASCII art
