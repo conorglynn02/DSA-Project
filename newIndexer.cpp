@@ -397,9 +397,9 @@ int main() {
     // hashTable.display();
 
     // Serialize the trie to a file
-    // std::ofstream outFile("trie_data.txt");
-    // trie.serialize(outFile);
-    // outFile.close();
+    std::ofstream outFile("trie_data.txt");
+    trie.serialize(outFile);
+    outFile.close();
 
     // Serialize the hash table to a file
     std::ofstream hashTableFile("hash_table_data.txt");

@@ -96,6 +96,68 @@ struct BookFrequencyNode {
     BookFrequencyNode(int id, int freq) : bookID(id), frequency(freq), next(nullptr), prev(nullptr) {}
 };
 
+class MaxHeap {
+private:
+    std::vector<std::pair<int, int>> heap;  // pair of bookID and combinedFrequency
+
+    void heapifyDown(int idx) {
+        int largest = idx;
+        int left = 2 * idx + 1;
+        int right = 2 * idx + 2;
+
+        // Compare with left child
+        if (left < heap.size() && heap[left].second > heap[largest].second) {
+            largest = left;
+        }
+
+        // Compare with right child
+        if (right < heap.size() && heap[right].second > heap[largest].second) {
+            largest = right;
+        }
+
+        if (largest != idx) {
+            std::swap(heap[idx], heap[largest]);
+            heapifyDown(largest);
+        }
+    }
+
+    void heapifyUp(int idx) {
+        while (idx > 0) {
+            int parent = (idx - 1) / 2;
+            if (heap[idx].second > heap[parent].second) {
+                std::swap(heap[idx], heap[parent]);
+                idx = parent;
+            } else {
+                break;
+            }
+        }
+    }
+
+public:
+    void insert(int bookID, int combinedFrequency) {
+        heap.push_back({bookID, combinedFrequency});
+        heapifyUp(heap.size() - 1);
+        if (heap.size() > 10) {
+            extractMax();
+        }
+    }
+
+    std::pair<int, int> extractMax() {
+        if (heap.empty()) return {-1, -1};  // Edge case for empty heap
+        std::pair<int, int> maxValue = heap[0];
+        heap[0] = heap.back();
+        heap.pop_back();
+        heapifyDown(0);
+        return maxValue;
+    }
+
+    void displayTop() {
+        for (auto& entry : heap) {
+            std::cout << "Book ID: " << entry.first << ", Combined Frequency: " << entry.second << std::endl;
+        }
+    }
+};
+
 class BookFrequencyList {
 public:
     BookFrequencyNode* head;
@@ -121,11 +183,14 @@ public:
             current = current->next;
         }
 
-        // Case 3: Insert new node at the beginning
+        current = head;
+        while (current->next != nullptr) {
+            current = current->next;
+        }
         BookFrequencyNode* newNode = new BookFrequencyNode(bookID, frequency);
-        newNode->next = head;
-        if (head != nullptr) head->prev = newNode;
-        head = newNode;
+        current->next = newNode;
+        newNode->prev = current;
+        newNode->next = nullptr;
     }
 
     // Sort the list by frequency in descending order
@@ -150,9 +215,11 @@ public:
     // Function to display the list (for debugging)
     void display() {
         BookFrequencyNode* current = head;
-        while (current != nullptr) {
+        int count = 0;
+        while (current != nullptr && count < 10) {
             std::cout << "Book ID: " << current->bookID << ", Frequency: " << current->frequency << std::endl;
             current = current->next;
+            count++;
         }
     }
 };
@@ -207,6 +274,21 @@ public:
             }
         } else {  // Word found, update frequency in the linked list
             entry->bookFrequency.insert(bookID, frequency);
+        }
+    }
+
+    BookFrequencyList* getBookFrequencyList(const std::string& word) {
+        int hashIndex = hashFunction(word);
+        HashNode* entry = table[hashIndex];
+
+        while (entry != nullptr && entry->key != word) {
+            entry = entry->next;
+        }
+
+        if (entry == nullptr) {
+            return nullptr;
+        } else {
+            return &entry->bookFrequency;
         }
     }
 
@@ -286,6 +368,59 @@ void displayMenu() {
     std::cout << "3. Exit\n";
 }
 
+// Function to merge two linked lists and find top 10 combined frequencies using MaxHeap
+void findTop10Books(BookFrequencyList* list1, BookFrequencyList* list2) {
+    MaxHeap maxHeap;
+
+    BookFrequencyNode* ptr1 = list1->head;
+    BookFrequencyNode* ptr2 = list2->head;
+
+    // Use two-pointer technique to merge the two lists
+    while (ptr1 && ptr2) {
+        if (ptr1->bookID == ptr2->bookID) {
+            maxHeap.insert(ptr1->bookID, ptr1->frequency + ptr2->frequency);
+            ptr1 = ptr1->next;
+            ptr2 = ptr2->next;
+        } else if (ptr1->bookID < ptr2->bookID) {
+            maxHeap.insert(ptr2->bookID, ptr2->frequency);
+            ptr2 = ptr2->next;
+        } else {
+            maxHeap.insert(ptr1->bookID, ptr1->frequency);
+            ptr1 = ptr1->next;
+        }
+    }
+
+    // Process remaining nodes in both lists
+    while (ptr1) {
+        maxHeap.insert(ptr1->bookID, ptr1->frequency);
+        ptr1 = ptr1->next;
+    }
+
+    while (ptr2) {
+        maxHeap.insert(ptr2->bookID, ptr2->frequency);
+        ptr2 = ptr2->next;
+    }
+
+    // Display the top 10 books
+    std::cout << "Top 10 books with the highest combined frequency:\n";
+    maxHeap.displayTop();
+}
+
+// Function to perform AND search for two words
+void top10AndSearch(HashTable hashtable, const std::string& word1, const std::string& word2) {
+    BookFrequencyList* list1 = hashtable.getBookFrequencyList(word1);
+    BookFrequencyList* list2 = hashtable.getBookFrequencyList(word2);
+
+    // Check if both words exist in the hash table
+    if (list1->head == nullptr || list2->head == nullptr) {
+        std::cout << "One or both words not found in the hash table.\n";
+        return;
+    }
+
+    // Find the top 10 books with the highest combined frequency
+    findTop10Books(list1, list2);
+}
+
 int main() {
     Trie trie;
     HashTable hashtable;
@@ -309,7 +444,7 @@ int main() {
     inFileHashTable.close();
 
     int choice;
-    std:: string word;
+    std:: string input;
 
     while (true) {
         displayMenu();
@@ -318,8 +453,22 @@ int main() {
         switch (choice) {
             case 1:
                 std::cout << "Enter a word to search: ";
-                std::cin >> word;
-                hashtable.search(word);
+                std::cin.ignore(); // To discard any leftover newline characters
+                std::getline(std::cin, input);
+
+                // Check if the input contains "AND"
+                if (input.find("AND") != std::string::npos) {
+                    std::istringstream iss(input);
+                    std::string word1, andKeyword, word2;
+                    iss >> word1 >> andKeyword >> word2;
+
+                    // Perform search for both words
+                    std::cout << "Searching for: " << word1 << " and " << word2 << std::endl;
+                    top10AndSearch(hashtable, word1, word2);
+                } else {
+                    // Perform a normal single-word search
+                    hashtable.search(input);
+                }
                 break;
             case 2:
                 std::cout << "Enter search prefix: ";
