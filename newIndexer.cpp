@@ -4,6 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <filesystem> // To iterate over files in the folder
+#include <regex>
 
 namespace fs = std::filesystem;
 
@@ -360,13 +361,37 @@ public:
     }
 };  
 
+std::string cleanWord(const std::string& word) {
+    std::string cleanedWord;
+
+    // Remove all non-alphanumeric characters from the word
+    for (char ch : word) {
+        if (std::isalnum(ch)) {
+            cleanedWord += ch;
+        }
+    }
+
+    return cleanedWord;
+}
+
 // Function to read words from a text file and index them
 void indexWordsFromFile(const std::string& filename, HashTable& hashTable, Trie& trie, int bookID) {
     std::ifstream file(filename);
     std::string word;
-    
+
     while (file >> word) {
-        hashTable.insert(word, bookID, trie);
+        // Convert the word to lowercase for consistency
+        for (char& ch : word) {
+            ch = std::tolower(ch);
+        }
+
+        // Clean the word by removing non-alphanumeric characters
+        word = cleanWord(word);
+
+        // Insert the cleaned word into the hash table and trie if it's not empty
+        if (!word.empty()) {
+            hashTable.insert(word, bookID, trie);  // Insert cleaned word into trie and hash table
+        }
     }
     
     file.close();
