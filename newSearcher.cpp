@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream> 
 #include <unistd.h>
+#include <limits>
 
 const int TABLE_SIZE = 1200;
 const int numberOfBooks = 10;
@@ -530,6 +531,15 @@ int main() {
         displayMenu();
         std::cin >> choice;
 
+        // Check if the input is valid
+
+        if (std::cin.fail()) {
+            std::cin.clear(); // Clear the error flag on cin
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard invalid input
+            printWithColor("Invalid choice. Please enter a number (1, 2, or 3).\n", "1;33");
+            continue; // Re-display the menu and prompt the user for input again
+        }
+
         switch (choice) {
             case 1:
                 printWithColor("Enter a word to search: ", "1;32");
@@ -558,7 +568,7 @@ int main() {
                 printWithColor("Exiting Program...\n", "1;31");
                 return 0;
             default:
-                printWithColor("Invalid choice. Please try again.\n", "1;33");
+                printWithColor("Invalid choice. Please enter a number (1, 2, or 3).\n", "1;33");
                 break;
         }
     }
