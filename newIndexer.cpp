@@ -16,7 +16,7 @@ struct BookFrequencyNode {
     BookFrequencyNode* next;
     BookFrequencyNode* prev;
 
-    BookFrequencyNode(int id, int freq) : bookID(id), frequency(freq), next(nullptr) {}
+    BookFrequencyNode(int id, int freq) : bookID(id), frequency(freq), next(nullptr), prev(nullptr) {}
 };
 
 // Book Frequency List class
@@ -27,7 +27,7 @@ public:
 public:
     BookFrequencyList() : head(nullptr) {}
     void insert(int bookID) {
-        // Case 1: checking if the list is empty and inserting the first node
+    // Case 1: checking if the list is empty and inserting the first node
         if (head == nullptr) {
             BookFrequencyNode* newNode = new BookFrequencyNode(bookID, 1);
             head = newNode;
@@ -48,9 +48,9 @@ public:
 
         // Case 3: inserting a new node if bookID is not in the list
         BookFrequencyNode* newNode = new BookFrequencyNode(bookID, 1);
-        
+
         insertSorted(newNode);
-        
+
         // newNode->prev = nullptr;
         // newNode->next = head;
         // head->prev = newNode;
@@ -195,10 +195,8 @@ struct HashNode {
     HashNode* next;
     std::string key;
     BookFrequencyList bookFrequency;  // Book ID -> frequency
-    // HashNode* next;
 
-    HashNode(const std::string& k) : key(k), bookFrequency() {}
-    //, next(nullptr) {}
+    HashNode(const std::string& k) : key(k), next(nullptr) {}
 };
 
 
@@ -243,7 +241,7 @@ public:
     }
 
     // Helper function for serializing the trie
-    // This function performs a depth-first traversal of the trie and writes the nodes to a file
+    // This function performs a depth-first traversal of the trie and writes the nodes to a file    
     void serializeHelper(TrieNode* node, std::ofstream& outFile) {
         // Base case: If the node is null, return
         if (!node) return;
@@ -261,7 +259,7 @@ public:
             // Recursive call for child nodes
             serializeHelper(pair.second, outFile);
         }
-        
+
         // Mark the end of children for this node
         outFile << "END\n";
     }
@@ -279,12 +277,17 @@ class HashTable {
 private:
     // The hash table is implemented as a vector of HashNode pointers
     std::vector<HashNode*> table;
-
-    // The size of the hash table
-    int TABLE_SIZE = 100;
+    int TABLE_SIZE;
+    int numElements;
+    const double LOAD_FACTOR_THRESHOLD = 0.75;
 
     // Hash function that converts a string (word) into an index
     int hashFunction(const std::string& key) {
+        if (key.empty()) {
+            std::cerr << "Error: Empty or invalid key!" << std::endl;
+            return 0;
+        }
+
         unsigned long hash = 0;
         for (char ch : key) {
             hash = (hash * 31) + ch;
@@ -292,18 +295,56 @@ private:
         return hash % TABLE_SIZE;
     }
 
+    void resize() {
+        int oldTableSize = TABLE_SIZE;
+        TABLE_SIZE *= 2;
+        std::vector<HashNode*> newTable(TABLE_SIZE, nullptr);
+
+        for (int i = 0; i < oldTableSize; ++i) {
+            HashNode* entry = table[i];
+            while (entry != nullptr) {
+                HashNode* next = entry->next;
+                int newIndex = hashFunction(entry->key);
+
+                entry->next = newTable[newIndex];
+                newTable[newIndex] = entry;
+                entry = next;
+            }
+        }
+
+        table = std::move(newTable);
+    }
+
 public:
     // Constructor to initialize the hash table with a specific size
-    HashTable() {
+    HashTable() : TABLE_SIZE(100), numElements(0) {
         table.resize(TABLE_SIZE, nullptr);
+    }
+
+    ~HashTable() {
+        for (int i = 0; i < TABLE_SIZE; ++i) {
+            HashNode* entry = table[i];
+            while (entry != nullptr) {
+                HashNode* temp = entry;
+                entry = entry->next;
+                delete temp;
+            }
+        }
     }
 
     // Insert a word and update its frequency for a specific book ID
     void insert(const std::string& word, int bookID, Trie& trie) {
+        if ((double)numElements / TABLE_SIZE > LOAD_FACTOR_THRESHOLD) {
+            resize();
+        }
+
+        if (word.empty()) {
+            std::cerr << "Skipping invalid or empty word" << std::endl;
+            return;
+        }
+
         // Calculate the hash index for the word
         int hashIndex = hashFunction(word);
-        // Initialize pointers for traversal
-        HashNode* prev = nullptr;
         // Get the head of the linked list at the hash index
         HashNode* entry = table[hashIndex];
 
@@ -311,10 +352,11 @@ public:
         if (entry == nullptr) {
             entry = new HashNode(word);  // Create a new HashNode for this word
             table[hashIndex] = entry;    // Assign it to the hash table
+            numElements++;
         }
 
         entry->bookFrequency.insert(bookID);
-
+        
         // Insert word into the trie
         trie.insert(word);
     }
@@ -342,7 +384,7 @@ public:
             HashNode* entry = table[i];
             while (entry != nullptr) {
                 outFile << entry->key;  // Write the word
-                
+
                 BookFrequencyNode* current = entry->bookFrequency.head;
                 while (current != nullptr) {
                     outFile << " " << current->bookID << ":" << current->frequency;  // Write Book ID and Frequency
@@ -359,13 +401,13 @@ public:
     void serialize(std::ofstream& outFile) {
         serializeHelper(outFile);
     }
-};  
+};
 
 std::string cleanWord(const std::string& word) {
     std::string cleanedWord;
-
+    
     // Remove all non-alphanumeric characters from the word
-    for (char ch : word) {
+   for (char ch : word) {
         if (std::isalnum(ch)) {
             cleanedWord += ch;
         }
@@ -377,6 +419,12 @@ std::string cleanWord(const std::string& word) {
 // Function to read words from a text file and index them
 void indexWordsFromFile(const std::string& filename, HashTable& hashTable, Trie& trie, int bookID) {
     std::ifstream file(filename);
+    // Check if the file is open
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+        return;
+    }
+
     std::string word;
 
     while (file >> word) {
@@ -393,7 +441,7 @@ void indexWordsFromFile(const std::string& filename, HashTable& hashTable, Trie&
             hashTable.insert(word, bookID, trie);  // Insert cleaned word into trie and hash table
         }
     }
-    
+
     file.close();
 }
 
@@ -403,7 +451,7 @@ int main() {
 
     // Path to the folder containing books
     std::string booksFolder = "./Books";
-
+    
     // Book ID counter (1 for the first book, 2 for the second, etc.)
     int bookID = 1;
 
@@ -414,7 +462,7 @@ int main() {
         // Index words from the current book file
         std::cout << "Indexing book: " << filename << " (Book ID: " << bookID << ")\n";
         indexWordsFromFile(filename, hashTable, trie, bookID);
-
+        
         // Increment the book ID for the next book
         bookID++;
     }
