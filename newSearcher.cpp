@@ -5,8 +5,13 @@
 #include <sstream> 
 #include <unistd.h>
 
-const int TABLE_SIZE = 100;
+const int TABLE_SIZE = 1200;
 const int numberOfBooks = 10;
+
+// Function to print text with color
+void printWithColor(const std::string& text, const std::string& colorCode) {
+    std::cout << "\033[" << colorCode << "m" << text << "\033[0m";
+}
 
 // Trie node definition
 struct TrieNode {
@@ -234,7 +239,7 @@ struct HashNode {
 class HashTable {
 private:
     std::vector<HashNode*> table;
-    int TABLE_SIZE = 100;
+    int TABLE_SIZE = 150000;
 
     // Hash function that converts a string (word) into an index
     int hashFunction(const std::string& key) {
@@ -299,10 +304,12 @@ public:
         }
 
         if (entry == nullptr) {
-            std::cout << "Word not found" << std::endl;
+            printWithColor("Word not Found: ", "1;31");
+            std::cout << std::endl;
             return;
         } else {
-            std::cout << "Word found: " << entry->key << std::endl;
+            printWithColor("Word Found: ", "1;33");
+            std::cout << entry->key << std::endl;
             int start = 0;
             int end = 10;
             bool isEnd = entry->bookFrequency.displayXToYBooks(start, end);
@@ -310,9 +317,9 @@ public:
                 std::cout << "No more books match this search." << std::endl;
                 return;
             }
-            std::string message = "To see next 10, type \"next\", else press any key and enter.";
-            std::cout << message << std::endl;
-            std:: string option;
+            std::string message = "To see next 10, type \"next\", else press any key and enter: ";
+            printWithColor(message, "1;32");
+            std::string option;
             std::cin >> option;
             while (option == "next" && !isEnd) {
                 start += 10;
@@ -321,11 +328,12 @@ public:
                 if (isEnd) {
                     break;
                 }
-                std::cout << message << std::endl;
+                printWithColor(message, "1;32");
                 std::cin >> option;
             }
             if (isEnd) {
-                std::cout << "No more books match this search." << std::endl;
+                printWithColor("No more books match this search." , "1;31");
+                std::cout << std::endl;
                 return;
             }
             std::cout << "Search exited successfully." << std::endl;
@@ -380,9 +388,11 @@ void autoCompleteSearch(Trie& trie) {
     std::cin >> prefix;
     std::vector<std::string> results = trie.autoComplete(prefix);
     if (results.empty()) {
-        std::cout << "No words found with the prefix \"" << prefix << "\".\n";
+        printWithColor("No words found with the prefix - ", "1;31");
+        std::cout << prefix << "\n";
     } else {
-        std::cout << "Autocomplete results for prefix \"" << prefix << "\":\n";
+        printWithColor("Autocomplete results for prefix - ", "1;33");
+        std::cout << prefix << ":\n";
         for (const std::string& result : results) {
             std::cout << result << "\n";
         }
@@ -442,10 +452,6 @@ void top10AndSearch(HashTable hashtable, const std::string& word1, const std::st
     findTop10Books(list1, list2);
 }
 
-void printWithColor(const std::string& text, const std::string& colorCode) {
-    std::cout << "\033[" << colorCode << "m" << text << "\033[0m";
-}
-
 void displayMenu() {
     std::string title = "\n\nChoose an Option:\n";
     printWithColor(title, "1;32");
@@ -486,7 +492,7 @@ void displayCoolIntro() {
 
     sleep(2);  // Pause for 2 seconds for a dramatic effect
 
-    std::string startMessage = "Let's get started...\n\n";
+    std::string startMessage = "Let's get started...";
     printWithColor(startMessage, "1;33");  // Yellow color
 
     sleep(1);  // Pause for 1 second
@@ -526,7 +532,7 @@ int main() {
 
         switch (choice) {
             case 1:
-                std::cout << "Enter a word to search: ";
+                printWithColor("Enter a word to search: ", "1;32");
                 std::cin.ignore(); // To discard any leftover newline characters
                 std::getline(std::cin, input);
 
@@ -545,14 +551,14 @@ int main() {
                 }
                 break;
             case 2:
-                std::cout << "Enter search prefix: ";
+                printWithColor("Enter search prefix: ", "1;32");
                 autoCompleteSearch(trie);
                 break;
             case 3:
-                std::cout << "Exiting program.\n";
+                printWithColor("Exiting Program...\n", "1;31");
                 return 0;
             default:
-                std::cout << "Invalid choice. Please try again.\n";
+                printWithColor("Invalid choice. Please try again.\n", "1;33");
                 break;
         }
     }
