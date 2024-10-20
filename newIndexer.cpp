@@ -282,7 +282,7 @@ private:
     const double LOAD_FACTOR_THRESHOLD = 0.75;
 
     // Hash function that converts a string (word) into an index
-    int hashFunction(const std::string& key) {
+    int hashFunction1(const std::string& key) {
         if (key.empty()) {
             std::cerr << "Error: Empty or invalid key!" << std::endl;
             return 0;
@@ -295,21 +295,45 @@ private:
         return hash % TABLE_SIZE;
     }
 
+    int hashFunction2(const std::string& key) {
+        if (key.empty()) {
+            std::cerr << "Error: Empty or invalid key!" << std::endl;
+            return 1;
+        }
+
+        unsigned long hash = 0;
+        for (char ch : key) {
+            hash = (hash * 37) + ch;  // different hash function than the first one
+        }
+        int secondaryHash = 7 - (hash % 7);  // prime number less than table size
+        
+        if (secondaryHash == 0) {
+            secondaryHash = 1;
+        }
+        
+        return secondaryHash;
+        
+        
+        // return 1;
+    }
+
     void resize() {
         int oldTableSize = TABLE_SIZE;
-        TABLE_SIZE *= 2;
+        TABLE_SIZE = (TABLE_SIZE * 2) + 1; // relatively prime number
+        std::cout << "Resizing hash table to " << TABLE_SIZE << std::endl;
         std::vector<HashNode*> newTable(TABLE_SIZE, nullptr);
 
         for (int i = 0; i < oldTableSize; ++i) {
             HashNode* entry = table[i];
-            while (entry != nullptr) {
-                HashNode* next = entry->next;
-                int newIndex = hashFunction(entry->key);
-
-                entry->next = newTable[newIndex];
-                newTable[newIndex] = entry;
-                entry = next;
+            if (entry == nullptr) {
+                continue;
             }
+            int newIndex = hashFunction1(entry->key);
+            int step = hashFunction2(entry->key);
+            while (newTable[newIndex] != nullptr) {
+                newIndex = (newIndex + step) % TABLE_SIZE;
+            }
+            newTable[newIndex] = entry;
         }
 
         table = std::move(newTable);
@@ -344,16 +368,26 @@ public:
         }
 
         // Calculate the hash index for the word
-        int hashIndex = hashFunction(word);
+        int hashIndex = hashFunction1(word);
+        int step = hashFunction2(word);
         // Get the head of the linked list at the hash index
         HashNode* entry = table[hashIndex];
 
-        // If the entry is null, create a new HashNode
-        if (entry == nullptr) {
-            entry = new HashNode(word);  // Create a new HashNode for this word
-            table[hashIndex] = entry;    // Assign it to the hash table
-            numElements++;
+        // Check if the word already exists in the table
+        while (entry != nullptr) {
+            if (entry->key == word) {
+                entry->bookFrequency.insert(bookID);
+                trie.insert(word);
+                return;
+            }
+            // Collision detected, apply double hashing
+            hashIndex = (hashIndex + step) % TABLE_SIZE;
+            entry = table[hashIndex];  // Move to the next probed index
         }
+
+        entry = new HashNode(word);  // Create a new HashNode for this word
+        table[hashIndex] = entry;    // Assign it to the hash table
+        numElements++;
 
         entry->bookFrequency.insert(bookID);
         
@@ -380,6 +414,7 @@ public:
 
     // Helper function for serializing the hash table
     void serializeHelper(std::ofstream& outFile) {
+        outFile << TABLE_SIZE << "\n";  // Write the table size
         for (int i = 0; i < TABLE_SIZE; ++i) {
             HashNode* entry = table[i];
             while (entry != nullptr) {

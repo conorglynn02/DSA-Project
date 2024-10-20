@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <limits>
 
-const int TABLE_SIZE = 1200;
 const int numberOfBooks = 10;
 
 // Function to print text with color
@@ -240,10 +239,10 @@ struct HashNode {
 class HashTable {
 private:
     std::vector<HashNode*> table;
-    int TABLE_SIZE = 150000;
+    int TABLE_SIZE;
 
     // Hash function that converts a string (word) into an index
-    int hashFunction(const std::string& key) {
+    int hashFunction1(const std::string& key) {
         unsigned long hash = 0;
         for (char ch : key) {
             hash = (hash * 31) + ch;
@@ -251,42 +250,33 @@ private:
         return hash % TABLE_SIZE;
     }
 
+    int hashFunction2(const std::string& key) {
+        unsigned long hash = 0;
+        for (char ch : key) {
+            hash = (hash * 37) + ch;  // different hash function than the first one
+        }
+        int secondaryHash = 7 - (hash % 7);  // prime number less than table size
+        
+        if (secondaryHash == 0) {
+            secondaryHash = 1;
+        }
+        
+        return secondaryHash;
+    }
+
 public:
     HashTable() {
         table.resize(TABLE_SIZE, nullptr);
     }
 
-    // Insert a word and update its frequency for a specific book ID
-    void insertX(const std::string& word, int bookID, int frequency) {
-        int hashIndex = hashFunction(word);
-        HashNode* prev = nullptr;
-        HashNode* entry = table[hashIndex];
-
-        // Traverse the linked list to find the word in the hash table
-        while (entry != nullptr && entry->key != word) {
-            prev = entry;
-            entry = entry->next;
-        }
-
-        if (entry == nullptr) {  // Word not found, insert new node
-            entry = new HashNode(word);
-            entry->bookFrequency.insert(bookID, frequency);  // Insert into the linked list
-            if (prev == nullptr) {  // No collision
-                table[hashIndex] = entry;
-            } else {  // Collision occurred, add new node to the chain
-                prev->next = entry;
-            }
-        } else {  // Word found, update frequency in the linked list
-            entry->bookFrequency.insert(bookID, frequency);
-        }
-    }
-
     BookFrequencyList* getBookFrequencyList(const std::string& word) {
-        int hashIndex = hashFunction(word);
+        int hashIndex = hashFunction1(word);
+        int step = hashFunction2(word);
         HashNode* entry = table[hashIndex];
 
         while (entry != nullptr && entry->key != word) {
-            entry = entry->next;
+            hashIndex = (hashIndex + step) % TABLE_SIZE;
+            entry = table[hashIndex];  // Move to the next probed index
         }
 
         if (entry == nullptr) {
@@ -297,11 +287,13 @@ public:
     }
 
     void search(const std::string& word) {
-        int hashIndex = hashFunction(word);
+        int hashIndex = hashFunction1(word);
+        int step = hashFunction2(word);
         HashNode* entry = table[hashIndex];
 
         while (entry != nullptr && entry->key != word) {
-            entry = entry->next;
+            hashIndex = (hashIndex + step) % TABLE_SIZE;
+            entry = table[hashIndex];  // Move to the next probed index
         }
 
         if (entry == nullptr) {
@@ -345,6 +337,11 @@ public:
     // Helper function for deserializing the hash table
     void deserializeHelper(std::ifstream& inFile) {
         std::string line;
+        std::getline(inFile, line);  // Read the first line containing the table size
+        TABLE_SIZE = std::stoi(line);
+        // Resize the table to the new size
+        table.resize(TABLE_SIZE, nullptr);
+
         while (std::getline(inFile, line)) {
             std::istringstream iss(line);
             std::string word;
@@ -364,16 +361,24 @@ public:
 
     // Insert word into the HashTable with frequency as linked list
     void insertToList(const std::string& word, int bookID, int frequency) {
-        int hashIndex = hashFunction(word);
+        int hashIndex = hashFunction1(word);
+        int step = hashFunction2(word);
         HashNode* entry = table[hashIndex];
 
-        // If word does not exist in the table, create a new node
-        if (entry == nullptr) {
-            entry = new HashNode(word);
-            table[hashIndex] = entry;
+        // Check if the word already exists in the table
+        while (entry != nullptr) {
+            if (entry->key == word) {
+                entry->bookFrequency.insert(bookID, frequency);
+                return;
+            }
+            // Collision detected, apply double hashing
+            hashIndex = (hashIndex + step) % TABLE_SIZE;
+            entry = table[hashIndex];  // Move to the next probed index
         }
 
-        // Insert into the BookFrequencyList
+        entry = new HashNode(word);  // Create a new HashNode for this word
+        table[hashIndex] = entry;    // Assign it to the hash table
+
         entry->bookFrequency.insert(bookID, frequency);
     }
 
