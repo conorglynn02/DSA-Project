@@ -8,9 +8,20 @@
 
 const int numberOfBooks = 10;
 
+// Map to store Book ID -> Book Name
+std::unordered_map<int, std::string> bookIdToNameMap;
+
 // Function to print text with color
 void printWithColor(const std::string& text, const std::string& colorCode) {
     std::cout << "\033[" << colorCode << "m" << text << "\033[0m";
+}
+
+void displayBookWithId(int bookID, int frequency) {
+    if (bookIdToNameMap.find(bookID) != bookIdToNameMap.end()) {
+        std::cout << "Book ID: " << bookID << ", Book Name: " << bookIdToNameMap[bookID] << ", Frequency: " << frequency << std::endl;
+    } else {
+        std::cout << "Book ID: " << bookID << " (Book name not found), Frequency: " << frequency << std::endl;
+    }
 }
 
 // Trie node definition
@@ -218,9 +229,9 @@ public:
                 current = current->next;
                 count++;
             }
-            std::cout << count+1 << "-> " << "Book ID: " << current->bookID << ", Frequency: " << current->frequency << std::endl;
-            current = current->next;
+            displayBookWithId(current->bookID, current->frequency); // Pass both book ID and frequency
             count++;
+            current = current->next;
         }
 
         return (current == nullptr);
@@ -458,6 +469,16 @@ void top10AndSearch(HashTable hashtable, const std::string& word1, const std::st
     findTop10Books(list1, list2);
 }
 
+// Deserialize the book ID -> book name map from a file
+void deserializeBookIdToNameMap(std::ifstream& inFile) {
+    int bookID;
+    std::string bookName;
+    while (inFile >> bookID) {
+        std::getline(inFile, bookName);
+        bookIdToNameMap[bookID] = bookName;
+    }
+}
+
 void displayMenu() {
     std::string title = "\n\nChoose an Option:\n";
     printWithColor(title, "1;32");
@@ -528,6 +549,15 @@ int main() {
     }
     hashtable.deserialize(inFileHashTable);
     inFileHashTable.close();
+
+    // Deserialize the book ID -> book name map
+    std::ifstream inFileBookIdToName("book_id_to_name_map.txt");
+    if (!inFileBookIdToName) {
+        std::cerr << "Failed to open book ID to name map file.\n";
+        return 1;
+    }
+    deserializeBookIdToNameMap(inFileBookIdToName);
+    inFileBookIdToName.close();
 
     int choice;
     std:: string input;
