@@ -29,7 +29,7 @@ void findTopAndBooks(BookFrequencyList* list1, BookFrequencyList* list2) {
     BookFrequencyNode* ptr1 = list1->head;
     BookFrequencyNode* ptr2 = list2->head;
 
-    // Use two-pointer technique to merge the two lists
+    // Two-pointer to insert into heap
     while (ptr1 && ptr2) {
         if (ptr1->bookID == ptr2->bookID) {
             maxHeap.seen[ptr1->bookID].first.first = true;
@@ -94,6 +94,61 @@ void topAndSearch(HashTable hashtable, const std::string& word1, const std::stri
 }
 
 // Function to merge two linked lists for AND and find top combined frequencies using MaxHeap
+void findTopOrBooks(BookFrequencyList* list1, BookFrequencyList* list2) {
+    std::string type = "or";
+    
+    MaxHeap maxHeap;
+
+    BookFrequencyNode* ptr1 = list1->head;
+    BookFrequencyNode* ptr2 = list2->head;
+
+    // Two-pointer to insert into heap
+    while (ptr1 && ptr2) {
+        if (ptr1->bookID == ptr2->bookID) {
+            maxHeap.insertOrUpdate(ptr1->bookID, (ptr1->frequency + ptr2->frequency));
+            ptr1 = ptr1->next;
+            ptr2 = ptr2->next;
+        } else if (ptr1->bookID < ptr2->bookID) {
+            maxHeap.insertOrUpdate(ptr2->bookID, ptr2->frequency);
+            ptr2 = ptr2->next;
+        } else {
+            maxHeap.insertOrUpdate(ptr1->bookID, ptr1->frequency);
+            ptr1 = ptr1->next;
+        }
+    }
+
+    // Process remaining nodes in both lists
+    while (ptr1) {
+        maxHeap.insertOrUpdate(ptr1->bookID, ptr1->frequency);
+        ptr1 = ptr1->next;
+    }
+
+    while (ptr2) {
+        maxHeap.insertOrUpdate(ptr2->bookID, ptr2->frequency);
+        ptr2 = ptr2->next;
+    }
+
+    // Display the top books
+    std::cout << "Top books with the highest combined frequency:\n";
+    maxHeap.displayTop(type);
+}
+
+// Function to perform OR search for two words
+void topOrSearch(HashTable hashtable, const std::string& word1, const std::string& word2) {
+    BookFrequencyList* list1 = hashtable.getBookFrequencyList(word1);
+    BookFrequencyList* list2 = hashtable.getBookFrequencyList(word2);
+
+    // Check if both words exist in the hash table
+    if (list1 == nullptr || list2 == nullptr) {
+        std::cout << "One or both words not found in the hash table.\n";
+        return;
+    }
+
+    // Find the top books with the highest combined frequency
+    findTopOrBooks(list1, list2);
+}
+
+// Function to merge two linked lists for AND and find top combined frequencies using MaxHeap
 void findTopNotBooks(BookFrequencyList* list1, BookFrequencyList* list2, const std::string& word1, const std::string& word2) {
     std::string type = "not";
     
@@ -102,12 +157,13 @@ void findTopNotBooks(BookFrequencyList* list1, BookFrequencyList* list2, const s
     BookFrequencyNode* ptr1 = list1->head;
     BookFrequencyNode* ptr2 = list2->head;
 
+    // Make blacklist of books that have word2
     while (ptr2) {
         maxHeap.bookNotMap[ptr2->bookID] = true;
         ptr2 = ptr2->next;
     }
     
-    // Use two-pointer technique to merge the two lists
+    // Two-pointer to insert into heap
     while (ptr1) {
         if (maxHeap.bookNotMap.find(ptr1->bookID) != maxHeap.bookNotMap.end()){
             ptr1 = ptr1->next;
@@ -252,7 +308,7 @@ int main() {
                 std::cin.ignore(); // To discard any leftover newline characters
                 std::getline(std::cin, input);
 
-                // Check if the input contains "AND"
+                // if the input has "AND"
                 if (input.find("AND") != std::string::npos) {
                     std::istringstream iss(input);
                     std::string word1, andKeyword, word2;
@@ -262,6 +318,7 @@ int main() {
                     std::cout << "Searching for: " << word1 << " and " << word2 << std::endl;
                     topAndSearch(hashtable, word1, word2);
                 }
+                // if the input has "NOT"
                 else if (input.find("NOT") != std::string::npos) {
                     std::istringstream iss(input);
                     std::string word1, notKeyword, word2;
@@ -270,6 +327,16 @@ int main() {
                     // Perform search for both words
                     std::cout << "Searching for: " << word1 << " not " << word2 << std::endl;
                     topNotSearch(hashtable, word1, word2);
+                }
+                // if the input has "OR"
+                else if (input.find("OR") != std::string::npos) {
+                    std::istringstream iss(input);
+                    std::string word1, orKeyword, word2;
+                    iss >> word1 >> orKeyword >> word2;
+
+                    // Perform search for both words
+                    std::cout << "Searching for: " << word1 << " or " << word2 << std::endl;
+                    topOrSearch(hashtable, word1, word2);
                 }
                 else {
                     // Perform a normal single-word search

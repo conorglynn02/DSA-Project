@@ -74,9 +74,8 @@ public:
             int idx = bookIDToIndex[bookID];
             heap[idx].second += frequency;
 
-            // Depending on whether the frequency increased or decreased, heapify accordingly
+            // move this book up the heap if needed
             heapifyUp(idx);
-            // heapifyDown(idx);
         } else {
             // BookID not in the heap, insert it as a new entry
             heap.push_back({bookID, frequency});
@@ -108,7 +107,7 @@ public:
             }
             //check if book ID exists in map
             if (bookIdToNameMap.find(current.first) !=bookIdToNameMap.end()) {
-                if (type == "and") {
+                if (type == "and" || type == "or") {
                 std::cout << start+1 << " -> " << "Book ID: " << current.first << ", Book Name: " << bookIdToNameMap[current.first] << ", Combined Frequency: " << current.second << std::endl;
                 }
                 else if (type == "not") {
