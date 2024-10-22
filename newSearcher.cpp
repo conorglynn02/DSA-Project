@@ -274,7 +274,7 @@ private:
     }
 
 public:
-    HashTable() {
+    HashTable() : TABLE_SIZE(100) {
         table.resize(TABLE_SIZE, nullptr);
     }
 
