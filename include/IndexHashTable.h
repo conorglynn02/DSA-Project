@@ -1,14 +1,15 @@
-#include <iostream>
-#include <fstream>
+#ifndef HASHTABLE_H
+#define HASHTABLE_H
+
 #include <unordered_map>
-#include <sstream>
+#include <string>
 #include <vector>
-#include <filesystem> // To iterate over files in the folder
-#include <regex>
-
-namespace fs = std::filesystem;
-
-const int TABLE_SIZE = 100;
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <functional>
+#include <stdexcept>
+#include "Trie.h"
 
 struct BookFrequencyNode {
     int bookID;
@@ -117,76 +118,6 @@ struct HashNode {
     BookFrequencyList bookFrequency;  // Book ID -> frequency
 
     HashNode(const std::string& k) : key(k), next(nullptr) {}
-};
-
-// Trie node definition
-// Each node in the trie contains a map of characters to child nodes, a flag to indicate the end of a word, and the word itself (if it is the end of a word).
-struct TrieNode {
-    std::unordered_map<char, TrieNode*> children;
-    bool isEndOfWord = false;
-    std::string word;
-};
-
-// Manually implemented Trie class
-// The Trie class provides methods to insert words into the trie and serialize the trie into a file.
-class Trie {
-private:
-    TrieNode* root;
-
-public:
-    // Constructor to initialize the root node
-    Trie() {
-        root = new TrieNode();
-    }
-
-    // Insert a word into the trie
-    void insert(const std::string& word) {
-        // Start from the root node
-        TrieNode* node = root;
-        // Traverse the trie, creating new nodes as needed
-        for (char ch : word) {
-            // If the character is not present in the children map, create a new node
-            if (node->children.find(ch) == node->children.end()) {
-                // Create a new node for the character
-                node->children[ch] = new TrieNode();
-            }
-            // Move to the child node corresponding to the character
-            node = node->children[ch];
-        }
-        // Mark the end of the word and store the word in the node
-        node->isEndOfWord = true;
-        // Store the word in the node
-        node->word = word;
-    }
-
-    // Helper function for serializing the trie
-    // This function performs a depth-first traversal of the trie and writes the nodes to a file    
-    void serializeHelper(TrieNode* node, std::ofstream& outFile) {
-        // Base case: If the node is null, return
-        if (!node) return;
-        // Traverse the children of the node
-        for (const auto& pair : node->children) {
-            // Write the character, isEndOfWord flag, and the word to the file
-            outFile << pair.first << " " << pair.second->isEndOfWord;
-            // If it is the end of a word, write the word itself
-            if (pair.second->isEndOfWord) {
-                outFile << " " << pair.second->word;
-            }
-            // Write a newline character to separate entries
-            outFile << "\n";
-
-            // Recursive call for child nodes
-            serializeHelper(pair.second, outFile);
-        }
-
-        // Mark the end of children for this node
-        outFile << "END\n";
-    }
-
-    // Serialize the trie into a file
-    void serialize(std::ofstream& outFile) {
-        serializeHelper(root, outFile);
-    }
 };
 
 // HashTable class
@@ -336,125 +267,6 @@ public:
     }
 };
 
-// Function to clean the book name by removing underscores and the ".txt" extension
-std::string cleanBookName(const std::string& filename) {
-    std::string cleanedName = filename;
-    
-    // Remove underscores
-    std::replace(cleanedName.begin(), cleanedName.end(), '_', ' ');
+#endif
 
-    // Remove the ".txt" extension if present
-    size_t lastDot = cleanedName.find_last_of('.');
-    if (lastDot != std::string::npos && cleanedName.substr(lastDot) == ".txt") {
-        cleanedName = cleanedName.substr(0, lastDot);
-    }
 
-    return cleanedName;
-}
-
-std::string cleanWord(const std::string& word) {
-    std::string cleanedWord;
-    
-    // Remove all non-alphanumeric characters from the word
-    for (char ch : word) {
-        if (std::isalnum(ch)) {
-            cleanedWord += ch;
-        }
-    }
-
-    return cleanedWord;
-}
-
-// Create a map to store Book ID -> Book Name
-std::unordered_map<int, std::string> bookIdToNameMap;
-
-// Function to read words from a text file and index them
-void indexWordsFromFile(const std::string& filename, HashTable& hashTable, Trie& trie, int bookID) {
-    std::ifstream file(filename);
-    // Check if the file is open
-    if (!file.is_open()) {
-        std::cerr << "Failed to open file: " << filename << std::endl;
-        return;
-    }
-
-    // Store the mapping of book ID to book name
-    std::string bookName = cleanBookName(filename.substr(filename.find_last_of("/\\") + 1));  // Extract file name
-    bookIdToNameMap[bookID] = bookName;  // Save the book name with the book ID
-
-    std::string word;
-
-    while (file >> word) {
-        // Convert the word to lowercase for consistency
-        for (char& ch : word) {
-            ch = std::tolower(ch);
-        }
-
-        // Clean the word by removing non-alphanumeric characters
-        word = cleanWord(word);
-
-        // Insert the cleaned word into the hash table and trie if it's not empty
-        if (!word.empty()) {
-            hashTable.insert(word, bookID, trie);  // Insert cleaned word into trie and hash table
-        }
-    }
-
-    file.close();
-}
-
-// Serialize the bookIdToNameMap and book paths to a file
-void serializeBookIdMap(std::ofstream& outFile, const std::unordered_map<int, std::string>& bookIdToPathMap) {
-    for (const auto& pair : bookIdToNameMap) {
-        // Serialize book ID, book name, and constructed path
-        std::string filePath = bookIdToPathMap.at(pair.first);
-        outFile << pair.first << " " << pair.second << " " << filePath << "\n";
-    }
-}
-
-int main() {
-    HashTable hashTable;
-    Trie trie;
-
-    // Path to the folder containing books
-    std::string booksFolder = "./Books";
-    
-    // Book ID counter (1 for the first book, 2 for the second, etc.)
-    int bookID = 1;
-
-    std::unordered_map<int, std::string> bookIdToPathMap;
-
-    // Iterate through the "books" folder to get each file
-    for (const auto& entry : fs::directory_iterator(booksFolder)) {
-        std::string filename = entry.path().string();
-        
-        // Store the file path for the current book ID
-        bookIdToPathMap[bookID] = filename;
-
-        // Index words from the current book file
-        std::cout << "Indexing book: " << filename << " (Book ID: " << bookID << ")\n";
-        indexWordsFromFile(filename, hashTable, trie, bookID);
-        
-        // Increment the book ID for the next book
-        bookID++;
-    }
-
-    // Serialize the trie to a file
-    std::ofstream outFile("trie_data.txt");
-    trie.serialize(outFile);
-    outFile.close();
-
-    // Serialize the hash table to a file
-    std::ofstream hashTableFile("hash_table_data.txt");
-    hashTable.serialize(hashTableFile);
-    hashTableFile.close();
-
-    // Serialize the book ID -> book name map
-    std::ofstream bookIdToNameFile("book_id_to_name_map.txt");
-    serializeBookIdMap(bookIdToNameFile, bookIdToPathMap);
-    bookIdToNameFile.close();
-
-    std::cout << "Hash table serialized.\n";
-
-    std::cout << "Indexing complete, index and trie serialized.\n";
-
-    return 0;
-}
