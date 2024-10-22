@@ -6,8 +6,6 @@
 #include <unistd.h>
 #include <limits>
 
-const int numberOfBooks = 10;
-
 // Map to store Book ID -> Book Name
 std::unordered_map<int, std::string> bookIdToNameMap;
 
