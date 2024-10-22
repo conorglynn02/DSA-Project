@@ -119,7 +119,7 @@ struct HashNode {
 class HashTable {
 private:
     // The hash table is implemented as a vector of HashNode pointers
-    std::vector<HashNode*> table;
+    VictorVector<HashNode*> table;
     int TABLE_SIZE;
     int numElements;
     const double LOAD_FACTOR_THRESHOLD = 0.75;
@@ -160,7 +160,7 @@ private:
         int oldTableSize = TABLE_SIZE;
         TABLE_SIZE = (TABLE_SIZE * 2) + 1; // relatively prime number
         std::cout << "Resizing hash table to " << TABLE_SIZE << std::endl;
-        std::vector<HashNode*> newTable(TABLE_SIZE, nullptr);
+        VictorVector<HashNode*> newTable(TABLE_SIZE, nullptr);
 
         for (int i = 0; i < oldTableSize; ++i) {
             HashNode* entry = table[i];

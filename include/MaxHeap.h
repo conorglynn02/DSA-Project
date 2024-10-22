@@ -1,7 +1,6 @@
 #ifndef MAXHEAP_H
 #define MAXHEAP_H
 
-#include <vector>
 #include <unordered_map>
 #include <iostream>
 
@@ -12,7 +11,7 @@ extern void printWithColor(const std::string& text, const std::string& colorCode
 
 class MaxHeap {
 private:
-    std::vector<std::pair<int, int>> heap;  // pair of bookID and combinedFrequency
+    VictorVector<std::pair<int, int>> heap;  // pair of bookID and combinedFrequency
     std::unordered_map<int, int> bookIDToIndex; // Map from bookID to index in the heap
 
     void heapifyDown(int idx) {

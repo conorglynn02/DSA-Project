@@ -98,7 +98,7 @@ struct HashNode {
 // HashTable class
 class HashTable {
 private:
-    std::vector<HashNode*> table;
+    VictorVector<HashNode*> table;
     int TABLE_SIZE;
 
     // Hash function that converts a string (word) into an index

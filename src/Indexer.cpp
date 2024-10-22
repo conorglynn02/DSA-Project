@@ -1,9 +1,9 @@
 #include <unordered_map>
-#include <vector>
 #include <filesystem>
 #include <regex>
 #include "Trie.h"
 #include "IndexHashTable.h"
+#include "VictorVector.h"
 
 namespace fs = std::filesystem;
 
