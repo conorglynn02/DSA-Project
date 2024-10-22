@@ -104,7 +104,6 @@ public:
 
     // Private function to resize the array when needed
     void resize(size_t newCapacity, T defaultValue = T()) {
-        std::cout << "Resizing from " << capacity << " to " << newCapacity << std::endl;
         T* newArr = new T[newCapacity];
 
         // Copy elements only up to the number of valid elements

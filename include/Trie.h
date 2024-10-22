@@ -5,6 +5,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include "VictorVector.h"
 
 
 // Trie node definition
@@ -112,7 +113,7 @@ public:
     }
 
     // Helper function for DFS to find all words that match the prefix
-    void autoCompleteHelper(TrieNode* node, std::vector<std::string>& results) {
+    void autoCompleteHelper(TrieNode* node, VictorVector<std::string>& results) {
         if (node->isEndOfWord) {
             results.push_back(node->word);
         }
@@ -122,9 +123,9 @@ public:
     }
 
     // Function to find all words with the given prefix
-    std::vector<std::string> autoComplete(const std::string& prefix) {
+    VictorVector<std::string> autoComplete(const std::string& prefix) {
         TrieNode* node = root;
-        std::vector<std::string> results;
+        VictorVector<std::string> results;
 
         for (char ch : prefix) {
             if (node->children.find(ch) == node->children.end()) {

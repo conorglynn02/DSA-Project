@@ -2,12 +2,13 @@
 #include "Trie.h"
 #include "SearchHashTable.h"
 #include "MaxHeap.h"
+#include "VictorVector.h"
 
 // Function to perform autocompletion using the pre-built trie
 void autoCompleteSearch(Trie& trie) {
     std::string prefix;
     std::cin >> prefix;
-    std::vector<std::string> results = trie.autoComplete(prefix);
+    VictorVector<std::string> results = trie.autoComplete(prefix);
     if (results.empty()) {
         printWithColor("No words found with the prefix - ", "1;31");
         std::cout << prefix << "\n";
