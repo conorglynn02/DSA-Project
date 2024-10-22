@@ -114,6 +114,7 @@ struct BookFrequencyNode {
 class MaxHeap {
 private:
     std::vector<std::pair<int, int>> heap;  // pair of bookID and combinedFrequency
+    std::unordered_map<int, int> bookIDToIndex; // Map from bookID to index in the heap
 
     void heapifyDown(int idx) {
         int largest = idx;
@@ -132,6 +133,9 @@ private:
 
         if (largest != idx) {
             std::swap(heap[idx], heap[largest]);
+            // Update index map after swap
+            bookIDToIndex[heap[idx].first] = idx;
+            bookIDToIndex[heap[largest].first] = largest;
             heapifyDown(largest);
         }
     }
@@ -140,7 +144,16 @@ private:
         while (idx > 0) {
             int parent = (idx - 1) / 2;
             if (heap[idx].second > heap[parent].second) {
+                // remove the old index from the map
+                if (bookIDToIndex.find(heap[idx].first) != bookIDToIndex.end()) {
+                    bookIDToIndex.erase(heap[idx].first);
+                }
                 std::swap(heap[idx], heap[parent]);
+
+                // update the new index in the map
+                bookIDToIndex[heap[idx].first] = idx;
+                // update the index in the heap
+                bookIDToIndex[heap[parent].first] = parent;
                 idx = parent;
             } else {
                 break;
@@ -149,27 +162,91 @@ private:
     }
 
 public:
-    void insert(int bookID, int combinedFrequency) {
-        heap.push_back({bookID, combinedFrequency});
-        heapifyUp(heap.size() - 1);
-        if (heap.size() > 10) {
-            extractMax();
+    public:
+    std::unordered_map<int, std::pair<std::pair<bool, bool>, int>> seen; // Map to keep track the seen books and their frequency
+    
+    void insertOrUpdate(int bookID, int frequency) {
+        if (bookIDToIndex.find(bookID) != bookIDToIndex.end()) {
+            // BookID already in the heap, update its frequency
+            int idx = bookIDToIndex[bookID];
+            heap[idx].second += frequency;
+
+            // Depending on whether the frequency increased or decreased, heapify accordingly
+            heapifyUp(idx);
+            // heapifyDown(idx);
+        } else {
+            // BookID not in the heap, insert it as a new entry
+            heap.push_back({bookID, frequency});
+            int idx = heap.size() - 1;
+            bookIDToIndex[bookID] = idx;
+            heapifyUp(idx);
         }
     }
 
     std::pair<int, int> extractMax() {
         if (heap.empty()) return {-1, -1};  // Edge case for empty heap
         std::pair<int, int> maxValue = heap[0];
-        heap[0] = heap.back();
-        heap.pop_back();
-        heapifyDown(0);
+        bookIDToIndex.erase(maxValue.first); // Remove from map
+        heap[0] = heap.back(); // Replace the root with the last element
+        heap.pop_back(); // Remove the last element
+        if (!heap.empty()) {
+            bookIDToIndex[heap[0].first] = 0; // Update root index in map
+            heapifyDown(0); // Heapify down the new root
+        }
         return maxValue;
     }
 
-    void displayTop() {
-        for (auto& entry : heap) {
-            std::cout << "Book ID: " << entry.first << ", Combined Frequency: " << entry.second << std::endl;
+    // Function to display the list of X to Y books
+    bool displayXToYBooks(int start, int end) {
+        while (heap.size() != 0 && start < end) {
+            std::pair<int, int> current = extractMax();
+            if (current.first == -1) {
+                return true;
+            }
+            std::cout << start+1 << "-> " << "Book ID: " << current.first << ", Combined Frequency: " << current.second << std::endl;
+            start++;
         }
+
+        return heap.empty();
+    }
+
+    void displayTop() {
+        if (heap.size() == 0) {
+            printWithColor("No matches found. ", "1;31");
+            std::cout << std::endl;
+            return;
+        }
+
+        printWithColor("Matches found: ", "1;33");
+        std::cout << std::endl;
+        int start = 0;
+        int end = 10;
+        bool isEnd = displayXToYBooks(start, end);
+        if (isEnd) {
+            std::cout << "No more books match this search." << std::endl;
+            return;
+        }
+        std::string message = "To see next 10, type \"next\", else press any key and enter: ";
+        printWithColor(message, "1;32");
+        std::string option;
+        std::cin >> option;
+        while (option == "next" && !isEnd) {
+            start += 10;
+            end += 10;
+            isEnd = displayXToYBooks(start, end);
+            if (isEnd) {
+                break;
+            }
+            printWithColor(message, "1;32");
+            std::cin >> option;
+        }
+        if (isEnd) {
+            printWithColor("No more books match this search." , "1;31");
+            std::cout << std::endl;
+            return;
+        }
+        std::cout << "Search exited successfully." << std::endl;
+        return;
     }
 };
 
@@ -415,7 +492,7 @@ void autoCompleteSearch(Trie& trie) {
 }
 
 // Function to merge two linked lists and find top 10 combined frequencies using MaxHeap
-void findTop10Books(BookFrequencyList* list1, BookFrequencyList* list2) {
+void findTop10AndBooks(BookFrequencyList* list1, BookFrequencyList* list2) {
     MaxHeap maxHeap;
 
     BookFrequencyNode* ptr1 = list1->head;
@@ -424,26 +501,44 @@ void findTop10Books(BookFrequencyList* list1, BookFrequencyList* list2) {
     // Use two-pointer technique to merge the two lists
     while (ptr1 && ptr2) {
         if (ptr1->bookID == ptr2->bookID) {
-            maxHeap.insert(ptr1->bookID, ptr1->frequency + ptr2->frequency);
+            maxHeap.seen[ptr1->bookID].first.first = true;
+            maxHeap.seen[ptr1->bookID].first.second = true;
+            maxHeap.insertOrUpdate(ptr1->bookID, ptr1->frequency + ptr2->frequency);
             ptr1 = ptr1->next;
             ptr2 = ptr2->next;
         } else if (ptr1->bookID < ptr2->bookID) {
-            maxHeap.insert(ptr2->bookID, ptr2->frequency);
+            maxHeap.seen[ptr2->bookID].first.second = true;
+            if (maxHeap.seen[ptr2->bookID].first.first) {
+                maxHeap.insertOrUpdate(ptr2->bookID, (ptr2->frequency + maxHeap.seen[ptr2->bookID].second));
+            }
+            maxHeap.seen[ptr2->bookID].second = ptr2->frequency;
             ptr2 = ptr2->next;
         } else {
-            maxHeap.insert(ptr1->bookID, ptr1->frequency);
+            maxHeap.seen[ptr1->bookID].first.first = true;
+            if (maxHeap.seen[ptr1->bookID].first.second) {
+                maxHeap.insertOrUpdate(ptr1->bookID, (ptr1->frequency + maxHeap.seen[ptr1->bookID].second));
+            }
+            maxHeap.seen[ptr1->bookID].second = ptr1->frequency;
             ptr1 = ptr1->next;
         }
     }
 
     // Process remaining nodes in both lists
     while (ptr1) {
-        maxHeap.insert(ptr1->bookID, ptr1->frequency);
+        maxHeap.seen[ptr1->bookID].first.first = true;
+        if (maxHeap.seen[ptr1->bookID].first.second) {
+            maxHeap.insertOrUpdate(ptr1->bookID, (ptr1->frequency + maxHeap.seen[ptr1->bookID].second));
+        }
+        maxHeap.seen[ptr1->bookID].second = ptr1->frequency;
         ptr1 = ptr1->next;
     }
 
     while (ptr2) {
-        maxHeap.insert(ptr2->bookID, ptr2->frequency);
+        maxHeap.seen[ptr2->bookID].first.second = true;
+        if (maxHeap.seen[ptr2->bookID].first.first) {
+            maxHeap.insertOrUpdate(ptr2->bookID, (ptr2->frequency + maxHeap.seen[ptr2->bookID].second));
+        }
+        maxHeap.seen[ptr2->bookID].second = ptr2->frequency;
         ptr2 = ptr2->next;
     }
 
@@ -458,13 +553,13 @@ void top10AndSearch(HashTable hashtable, const std::string& word1, const std::st
     BookFrequencyList* list2 = hashtable.getBookFrequencyList(word2);
 
     // Check if both words exist in the hash table
-    if (list1->head == nullptr || list2->head == nullptr) {
+    if (list1 == nullptr || list2 == nullptr) {
         std::cout << "One or both words not found in the hash table.\n";
         return;
     }
 
     // Find the top 10 books with the highest combined frequency
-    findTop10Books(list1, list2);
+    findTop10AndBooks(list1, list2);
 }
 
 // Deserialize the book ID -> book name map from a file
@@ -515,12 +610,9 @@ void displayCoolIntro() {
     std::string instructions = "Find words, autocomplete your queries, and explore the world of books.\n\n";
     printWithColor(instructions, "1;37");  // White color
 
-    sleep(2);  // Pause for 2 seconds for a dramatic effect
-
     std::string startMessage = "Let's get started...";
     printWithColor(startMessage, "1;33");  // Yellow color
 
-    sleep(1);  // Pause for 1 second
 }
 
 int main() {
