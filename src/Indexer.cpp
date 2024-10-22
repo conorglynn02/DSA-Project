@@ -1,9 +1,9 @@
-#include <unordered_map>
 #include <vector>
 #include <filesystem>
 #include <regex>
 #include "Trie.h"
 #include "IndexHashTable.h"
+#include "CustomBookMap.h"
 
 namespace fs = std::filesystem;
 
@@ -39,7 +39,7 @@ std::string cleanWord(const std::string& word) {
 }
 
 // Create a map to store Book ID -> Book Name
-std::unordered_map<int, std::string> bookIdToNameMap;
+CustomBookMap bookIdToNameMap;
 
 // Function to read words from a text file and index them
 void indexWordsFromFile(const std::string& filename, HashTable& hashTable, Trie& trie, int bookID) {
@@ -75,11 +75,16 @@ void indexWordsFromFile(const std::string& filename, HashTable& hashTable, Trie&
 }
 
 // Serialize the bookIdToNameMap and book paths to a file
-void serializeBookIdMap(std::ofstream& outFile, const std::unordered_map<int, std::string>& bookIdToPathMap) {
-    for (const auto& pair : bookIdToNameMap) {
-        // Serialize book ID, book name, and constructed path
-        std::string filePath = bookIdToPathMap.at(pair.first);
-        outFile << pair.first << " " << pair.second << " " << filePath << "\n";
+void serializeBookIdMap(std::ofstream& outFile, CustomBookMap& bookIdToPathMap) {
+    for (int bookID = 1; bookID <= TABLE_SIZE; ++bookID) {
+        if (bookIdToNameMap.exists(bookID)) {
+            if (bookIdToPathMap.exists(bookID)) {
+                // Serialize book ID, book name, and constructed path
+                std::string filePath = bookIdToPathMap.get(bookID);
+                std::string bookName = bookIdToNameMap.get(bookID);
+                outFile << bookID << " " << bookName << " " << filePath << "\n";
+            }
+        }
     }
 }
 
@@ -93,14 +98,14 @@ int main() {
     // Book ID counter (1 for the first book, 2 for the second, etc.)
     int bookID = 1;
 
-    std::unordered_map<int, std::string> bookIdToPathMap;
+    CustomBookMap bookIdToPathMap;
 
     // Iterate through the "books" folder to get each file
     for (const auto& entry : fs::directory_iterator(booksFolder)) {
         std::string filename = entry.path().string();
         
         // Store the file path for the current book ID
-        bookIdToPathMap[bookID] = filename;
+        bookIdToPathMap.insert(bookID, filename);
 
         // Index words from the current book file
         std::cout << "Indexing book: " << filename << " (Book ID: " << bookID << ")\n";
