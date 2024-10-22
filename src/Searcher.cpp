@@ -1,9 +1,3 @@
-#include <iostream>
-#include <fstream>
-#include <unordered_map>
-#include <vector>
-#include <sstream> 
-#include <unistd.h>
 #include <limits>
 #include "Trie.h"
 #include "SearchHashTable.h"

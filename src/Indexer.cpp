@@ -1,9 +1,6 @@
-#include <iostream>
-#include <fstream>
 #include <unordered_map>
-#include <sstream>
 #include <vector>
-#include <filesystem> // To iterate over files in the folder
+#include <filesystem>
 #include <regex>
 #include "Trie.h"
 #include "IndexHashTable.h"

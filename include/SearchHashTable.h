@@ -1,14 +1,6 @@
 #ifndef SEARCHHASHTABLE_H
 #define SEARCHHASHTABLE_H
 
-#include <unordered_map>
-#include <string>
-#include <vector>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <functional>
-#include <stdexcept>
 #include "Trie.h"
 #include "MaxHeap.h"
 
