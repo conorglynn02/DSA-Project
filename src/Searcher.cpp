@@ -20,8 +20,10 @@ void autoCompleteSearch(Trie& trie) {
     }
 }
 
-// Function to merge two linked lists and find top 10 combined frequencies using MaxHeap
-void findTop10AndBooks(BookFrequencyList* list1, BookFrequencyList* list2) {
+// Function to merge two linked lists for AND and find top combined frequencies using MaxHeap
+void findTopAndBooks(BookFrequencyList* list1, BookFrequencyList* list2) {
+    std::string type = "and";
+    
     MaxHeap maxHeap;
 
     BookFrequencyNode* ptr1 = list1->head;
@@ -71,13 +73,13 @@ void findTop10AndBooks(BookFrequencyList* list1, BookFrequencyList* list2) {
         ptr2 = ptr2->next;
     }
 
-    // Display the top 10 books
-    std::cout << "Top 10 books with the highest combined frequency:\n";
-    maxHeap.displayTop();
+    // Display the top books
+    std::cout << "Top books with the highest combined frequency:\n";
+    maxHeap.displayTop(type);
 }
 
 // Function to perform AND search for two words
-void top10AndSearch(HashTable hashtable, const std::string& word1, const std::string& word2) {
+void topAndSearch(HashTable hashtable, const std::string& word1, const std::string& word2) {
     BookFrequencyList* list1 = hashtable.getBookFrequencyList(word1);
     BookFrequencyList* list2 = hashtable.getBookFrequencyList(word2);
 
@@ -87,8 +89,58 @@ void top10AndSearch(HashTable hashtable, const std::string& word1, const std::st
         return;
     }
 
-    // Find the top 10 books with the highest combined frequency
-    findTop10AndBooks(list1, list2);
+    // Find the top books with the highest combined frequency
+    findTopAndBooks(list1, list2);
+}
+
+// Function to merge two linked lists for AND and find top combined frequencies using MaxHeap
+void findTopNotBooks(BookFrequencyList* list1, BookFrequencyList* list2, const std::string& word1, const std::string& word2) {
+    std::string type = "not";
+    
+    MaxHeap maxHeap;
+
+    BookFrequencyNode* ptr1 = list1->head;
+    BookFrequencyNode* ptr2 = list2->head;
+
+    while (ptr2) {
+        maxHeap.bookNotMap[ptr2->bookID] = true;
+        ptr2 = ptr2->next;
+    }
+    
+    // Use two-pointer technique to merge the two lists
+    while (ptr1) {
+        if (maxHeap.bookNotMap.find(ptr1->bookID) != maxHeap.bookNotMap.end()){
+            ptr1 = ptr1->next;
+        } else {
+            maxHeap.insertOrUpdate(ptr1->bookID, ptr1->frequency);
+            ptr1 = ptr1->next;
+        }
+    }
+
+    // Display the top books
+    std::cout << "Top books with " << word1 << " and without " << word2 << " are:\n";
+    maxHeap.displayTop(type);
+}
+
+// Function to perform NOT search for two words
+void topNotSearch(HashTable hashtable, const std::string& word1, const std::string& word2) {
+    BookFrequencyList* list1 = hashtable.getBookFrequencyList(word1);
+    BookFrequencyList* list2 = hashtable.getBookFrequencyList(word2);
+
+    // Check if first word exists
+    if (list1 == nullptr) {
+        std::cout << word1 << " not found in the hash table.\n";
+        return;
+    }
+
+    // Check if second word exists
+    if (list2 == nullptr) {
+        hashtable.search(word1);
+        return;
+    }
+
+    // Find the top books with the highest combined frequency
+    findTopNotBooks(list1, list2, word1, word2);
 }
 
 // Deserialize the book ID -> book name map from a file
@@ -208,8 +260,18 @@ int main() {
 
                     // Perform search for both words
                     std::cout << "Searching for: " << word1 << " and " << word2 << std::endl;
-                    top10AndSearch(hashtable, word1, word2);
-                } else {
+                    topAndSearch(hashtable, word1, word2);
+                }
+                else if (input.find("NOT") != std::string::npos) {
+                    std::istringstream iss(input);
+                    std::string word1, notKeyword, word2;
+                    iss >> word1 >> notKeyword >> word2;
+
+                    // Perform search for both words
+                    std::cout << "Searching for: " << word1 << " not " << word2 << std::endl;
+                    topNotSearch(hashtable, word1, word2);
+                }
+                else {
                     // Perform a normal single-word search
                     hashtable.search(input);
                 }

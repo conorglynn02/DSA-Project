@@ -62,7 +62,8 @@ private:
 
 public:
     public:
-    std::unordered_map<int, std::pair<std::pair<bool, bool>, int>> seen; // Map to keep track the seen books and their frequency
+    std::unordered_map<int, std::pair<std::pair<bool, bool>, int>> seen; // Map to keep track of the seen books and their frequency
+    std::unordered_map<int, bool> bookNotMap; // Map to keep track of the books that shouldn't appear, not search
     
     void insertOrUpdate(int bookID, int frequency) {
         if (bookIDToIndex.find(bookID) != bookIDToIndex.end()) {
@@ -96,31 +97,36 @@ public:
     }
 
     // Function to display the list of X to Y books
-    bool displayXToYBooks(int start, int end) {
+    bool displayXToYBooks(int start, int end, const std::string& type) {
         while (heap.size() != 0 && start < end) {
             std::pair<int, int> current = extractMax();
             if (current.first == -1) {
                 return true;
             }
-            std::cout << start+1 << "-> " << "Book ID: " << current.first << ", Combined Frequency: " << current.second << std::endl;
+            if (type =="and") {
+                std::cout << start+1 << "-> " << "Book ID: " << current.first << ", Combined Frequency: " << current.second << std::endl;
+            }
+            else if (type == "not") {
+                std::cout << start+1 << "-> " << "Book ID: " << current.first << ", Frequency: " << current.second << std::endl;
+            }
             start++;
         }
 
         return heap.empty();
     }
 
-    void displayTop() {
+    void displayTop(const std::string& type) {
         if (heap.size() == 0) {
-            printWithColor("No matches found. ", "1;31");
+            printWithColor("No book matches found. ", "1;31");
             std::cout << std::endl;
             return;
         }
 
-        printWithColor("Matches found: ", "1;33");
+        printWithColor("Book matches found: ", "1;33");
         std::cout << std::endl;
         int start = 0;
         int end = 10;
-        bool isEnd = displayXToYBooks(start, end);
+        bool isEnd = displayXToYBooks(start, end, type);
         if (isEnd) {
             std::cout << "No more books match this search." << std::endl;
             return;
@@ -132,7 +138,7 @@ public:
         while (option == "next" && !isEnd) {
             start += 10;
             end += 10;
-            isEnd = displayXToYBooks(start, end);
+            isEnd = displayXToYBooks(start, end, type);
             if (isEnd) {
                 break;
             }
