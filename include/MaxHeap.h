@@ -1,9 +1,12 @@
 #ifndef MAXHEAP_H
 #define MAXHEAP_H
-
+#include "SearchHashTable.h"
 #include <vector>
 #include <unordered_map>
 #include <iostream>
+
+// Map to store Book ID -> Book Name, declared as extern
+extern std::unordered_map<int, std::string> bookIdToNameMap;
 
 // Function to print text with color
 extern void printWithColor(const std::string& text, const std::string& colorCode) {
@@ -103,11 +106,14 @@ public:
             if (current.first == -1) {
                 return true;
             }
-            if (type =="and") {
-                std::cout << start+1 << "-> " << "Book ID: " << current.first << ", Combined Frequency: " << current.second << std::endl;
-            }
-            else if (type == "not") {
-                std::cout << start+1 << "-> " << "Book ID: " << current.first << ", Frequency: " << current.second << std::endl;
+            //check if book ID exists in map
+            if (bookIdToNameMap.find(current.first) !=bookIdToNameMap.end()) {
+                if (type == "and") {
+                std::cout << start+1 << " -> " << "Book ID: " << current.first << ", Book Name: " << bookIdToNameMap[current.first] << ", Combined Frequency: " << current.second << std::endl;
+                }
+                else if (type == "not") {
+                std::cout << start+1 << " -> " << "Book ID: " << current.first << ", Book Name: " << bookIdToNameMap[current.first] << ", Frequency: " << current.second << std::endl;
+                }
             }
             start++;
         }
