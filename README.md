@@ -1,4 +1,7 @@
-# DSA-Project
+# DSA-Project - O Sully's Bananas
+- Oisin O Sullivan: 22368493
+- Dara Newsome: 22351434
+- Conor Glynn: 22352155
 
 ## How to run: 
 1. `mkdir build`
