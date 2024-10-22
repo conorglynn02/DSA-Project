@@ -2,6 +2,8 @@ index.json
 indexer
 searcher
 
+build/
+
 *.exe
 *.Identifier
 *.txt

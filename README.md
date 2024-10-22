@@ -1,7 +1,9 @@
 # DSA-Project
 
 How to run: 
-1. `g++ indexer.cpp -I./include -o indexer.exe`
-2. `./indexer.exe`
-3. `g++ searcher.cpp -I./include -o searcher.exe`
-4. `./searcher.exe`
+1. `mkdir build`
+2. `cd ./build`
+3. `cmake ..`
+4. `make`
+5. `./indexer`
+6. `./searcher`
