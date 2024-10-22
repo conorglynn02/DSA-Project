@@ -1,5 +1,5 @@
-#ifndef HASHTABLE_H
-#define HASHTABLE_H
+#ifndef INDEXHASHTABLE_H
+#define INDEXHASHTABLE_H
 
 #include <unordered_map>
 #include <string>
