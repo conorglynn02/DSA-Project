@@ -7,9 +7,9 @@
 // Map to store Book ID -> Book Name
 std::unordered_map<int, std::string> bookIdToNameMap;
 
-void displayBookWithId(int bookID, int frequency) {
+void displayBookWithId(int count, int bookID, int frequency) {
     if (bookIdToNameMap.find(bookID) != bookIdToNameMap.end()) {
-        std::cout << "Book ID: " << bookID << ", Book Name: " << bookIdToNameMap[bookID] << ", Frequency: " << frequency << std::endl;
+        std::cout << count + 1 << " -> " << "Book ID: " << bookID << ", Book Name: " << bookIdToNameMap[bookID] << ", Frequency: " << frequency << std::endl;
     } else {
         std::cout << "Book ID: " << bookID << " (Book name not found), Frequency: " << frequency << std::endl;
     }
@@ -78,7 +78,7 @@ public:
                 current = current->next;
                 count++;
             }
-            displayBookWithId(current->bookID, current->frequency); // Pass both book ID and frequency
+            displayBookWithId(count, current->bookID, current->frequency); // Pass both book ID and frequency
             count++;
             current = current->next;
         }
